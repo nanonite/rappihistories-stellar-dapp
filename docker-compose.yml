@@ -1,0 +1,16 @@
+# Runs INSIDE the sbx sandbox's private Docker Engine.
+# The opencode agent starts this when it needs verdaccio.
+
+services:
+  verdaccio:
+    image: verdaccio/verdaccio:6
+    container_name: verdaccio-sentry
+    volumes:
+      - ./verdaccio-config.yaml:/verdaccio/conf/config.yaml:ro
+      - verdaccio-storage:/verdaccio/storage
+    ports:
+      - "4873:4873"
+    restart: unless-stopped
+
+volumes:
+  verdaccio-storage:

@@ -1,0 +1,49 @@
+FROM docker/sandbox-templates:opencode-docker
+
+# opencode-docker includes: Ubuntu, Node.js 20, Git, Docker CLI,
+# Docker Engine (privileged inside microVM), opencode binary,
+# HTTP_PROXY/HTTPS_PROXY passthrough for sudo
+
+USER root
+
+# Remove npm version of opencode, then install Go binary
+RUN rm -rf /usr/local/share/npm-global/lib/node_modules/opencode-ai && \
+    rm -f /usr/local/share/npm-global/bin/opencode /usr/local/share/npm-global/bin/opencode-real
+RUN curl -fsSL https://opencode.ai/install | bash && \
+    cp /root/.opencode/bin/opencode /usr/local/bin/opencode && \
+    chmod +x /usr/local/bin/opencode
+
+# Install Playwright system dependencies for browser testing
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb \
+    libgbm-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust toolchain for Soroban contracts
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Add wasm32 target for Soroban compilation
+RUN rustup target add wasm32-unknown-unknown
+
+# Make Rust toolchain readable by agent user
+RUN chmod -R a+rX /root/.cargo /root/.rustup && chmod a+rx /root
+
+# Install pnpm globally via npm (avoids corepack Node 20 ERR_VM_DYNAMIC_IMPORT bug)
+# Pin to pnpm 9 — pnpm 10+ requires Node 22+
+RUN npm install -g pnpm@9
+
+# Install verdaccio globally via npm
+RUN npm install -g verdaccio
+
+# Switch to non-root agent user
+USER agent
+
+# Add global npm bin and Rust cargo bin to PATH for agent user
+# Set RUSTUP_HOME/CARGO_HOME so rustup proxies resolve for agent
+RUN echo 'export PATH="/usr/local/share/npm-global/bin:/root/.cargo/bin:$PATH"' >> /home/agent/.bashrc && \
+    echo 'export RUSTUP_HOME=/root/.rustup' >> /home/agent/.bashrc && \
+    echo 'export CARGO_HOME=/root/.cargo' >> /home/agent/.bashrc
+
+# Verify toolchain
+RUN bash -c "source /home/agent/.bashrc && pnpm --version && node --version && docker --version && rustc --version && cargo --version"
