@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 ### Changed
+- INF — Add Nix flake for dev shell and CI runner toolchains (#64)
 - INF — Add contract-focused Nix flake for Soroban tests and WASM builds (#64)
 - INF-4 — Soroban contract workspace (Cargo workspace) (#5)
 - INF-2 — Scaffold package and app skeletons (#3)
