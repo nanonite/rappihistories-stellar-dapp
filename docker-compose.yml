@@ -71,6 +71,33 @@ services:
       verdaccio:
         condition: service_healthy
 
+  forgejo-runner:
+    image: data.forgejo.org/forgejo/runner:12
+    container_name: forgejo-runner
+    profiles:
+      - ci
+    environment:
+      DOCKER_HOST: tcp://forgejo-dind:2375
+    command:
+      - /bin/forgejo-runner
+      - --config
+      - /etc/forgejo-runner/config.yml
+      - daemon
+      - --url
+      - ${FORGEJO_RUNNER_URL:-http://forgejo:3000/}
+      - --uuid
+      - ${FORGEJO_RUNNER_UUID:-38646461-3231-3539-3432-383533316265}
+      - --token-url
+      - file:///run/secrets/forgejo-runner-token
+      - --label
+      - ubuntu-latest:docker://docker.io/library/node:20-bookworm
+    volumes:
+      - ./.forgejo/runner-config.yml:/etc/forgejo-runner/config.yml:ro
+      - ${FORGEJO_RUNNER_TOKEN_FILE:-./.runtime/forgejo-runner/token}:/run/secrets/forgejo-runner-token:ro
+    networks:
+      - forgejo-ci
+    restart: unless-stopped
+
   # Template for future dApp containers that need to run pnpm/npm/yarn.
   # Keep package-installing app containers on npm-cache-only so they can reach
   # Verdaccio but cannot reach registry.npmjs.org or the wider web directly.
@@ -90,6 +117,8 @@ networks:
     name: medichain-package-uplink
   app-runtime:
     name: medichain-app-runtime
+  forgejo-ci:
+    external: true
 
 volumes:
   verdaccio-storage:

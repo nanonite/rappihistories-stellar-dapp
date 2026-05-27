@@ -1,0 +1,4 @@
+container:
+  # In Docker-in-Docker, host networking means the job container shares the
+  # forgejo-dind container network, where the Forgejo service name resolves.
+  network: host
