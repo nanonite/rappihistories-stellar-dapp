@@ -14,7 +14,16 @@
   },
   "files": [],
   "references": [
+    { "path": "./packages/domain" },
+    { "path": "./packages/crypto" },
+    { "path": "./packages/storage" },
+    { "path": "./packages/stellar-client" },
+    { "path": "./packages/wallet" },
+    { "path": "./packages/test-fixtures" },
     { "path": "./packages/shared" },
-    { "path": "./apps/web" }
+    { "path": "./apps/web" },
+    { "path": "./apps/api-indexer" },
+    { "path": "./apps/kms-gate" },
+    { "path": "./e2e" }
   ]
 }
