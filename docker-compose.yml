@@ -78,6 +78,9 @@ services:
       - ci
     environment:
       DOCKER_HOST: tcp://forgejo-dind:2375
+      NPM_CONFIG_REGISTRY: http://medichain-verdaccio:4873/
+      npm_config_registry: http://medichain-verdaccio:4873/
+      YARN_NPM_REGISTRY_SERVER: http://medichain-verdaccio:4873/
     command:
       - /bin/forgejo-runner
       - --config
@@ -96,6 +99,10 @@ services:
       - ${FORGEJO_RUNNER_TOKEN_FILE:-./.runtime/forgejo-runner/token}:/run/secrets/forgejo-runner-token:ro
     networks:
       - forgejo-ci
+      - npm-cache-only
+    depends_on:
+      verdaccio:
+        condition: service_healthy
     restart: unless-stopped
 
   # Template for future dApp containers that need to run pnpm/npm/yarn.

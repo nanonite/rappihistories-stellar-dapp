@@ -1,12 +1,11 @@
 name: CI
 
-# =====================================================================
-# EXOMONAD GENERATED PLACEHOLDER
-# Replace this scaffold with the build, test, lint, and release checks
-# your project needs before relying on Forgejo/Gitea Actions gating.
-# =====================================================================
-
 on: push
+
+env:
+  NPM_CONFIG_REGISTRY: http://medichain-verdaccio:4873/
+  npm_config_registry: http://medichain-verdaccio:4873/
+  YARN_NPM_REGISTRY_SERVER: http://medichain-verdaccio:4873/
 
 jobs:
   ci:
@@ -14,10 +13,19 @@ jobs:
     steps:
       - name: Checkout repository
         run: |
-          git clone --depth 1 "${{ github.server_url }}/${{ github.repository }}.git" .
-          git checkout "${{ github.sha }}"
+          git init .
+          git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+          git fetch --depth 1 origin "${{ github.ref }}"
+          git checkout --detach "${{ github.sha }}"
 
-      - name: Customize workflow
+      - name: Configure pnpm registry
         run: |
-          echo "Replace .forgejo/workflows/ci.yml with project-specific CI commands."
-          echo "Add real build, test, lint, and release checks before merge gating."
+          node -e 'const registry = process.env.NPM_CONFIG_REGISTRY.replace(/\/$/, ""); fetch(registry + "/-/ping").then((r)=>process.exit(r.ok?0:1)).catch((err)=>{ console.error(err); process.exit(1); })'
+          npm install --global pnpm@9.15.9 --registry "${NPM_CONFIG_REGISTRY}" --loglevel warn
+          test "$(pnpm config get registry)" = "${NPM_CONFIG_REGISTRY}"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck

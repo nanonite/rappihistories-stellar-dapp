@@ -68,6 +68,54 @@ http://localhost:3001
 
 Set `WEB_PORT=3000` when port 3000 is available.
 
+## Forgejo CI Job Containers
+
+Forgejo Actions jobs run through a Docker-in-Docker daemon. The repository
+`.npmrc` intentionally points to `http://localhost:4873/` for host-side
+developer installs, but `localhost` inside a DIND job container is the job
+container itself, not Verdaccio.
+
+CI overrides the registry with environment variables in
+`.forgejo/workflows/ci.yml`:
+
+```text
+NPM_CONFIG_REGISTRY=http://medichain-verdaccio:4873/
+npm_config_registry=http://medichain-verdaccio:4873/
+YARN_NPM_REGISTRY_SERVER=http://medichain-verdaccio:4873/
+```
+
+The repo-owned `forgejo-runner` Compose service is attached to
+`medichain-npm-cache-only` and waits for Verdaccio to become healthy. The
+external `forgejo-dind` container is not created by this Compose file, so its
+network attachment must be maintained by the operator whenever that container
+is created or recreated:
+
+```bash
+docker network connect medichain-npm-cache-only forgejo-dind 2>/dev/null || true
+docker inspect forgejo-dind \
+  --format '{{if index .NetworkSettings.Networks "medichain-npm-cache-only"}}ok{{else}}missing{{end}}'
+```
+
+The expected output is `ok`. Without this attachment, job containers using the
+runner's host-network DIND mode cannot resolve or reach
+`http://medichain-verdaccio:4873/`.
+
+Use this DIND job-container-style health check after runner/DIND maintenance:
+
+```bash
+docker -H tcp://forgejo-dind:2375 run --rm --network host \
+  -e NPM_CONFIG_REGISTRY=http://medichain-verdaccio:4873/ \
+  -e npm_config_registry=http://medichain-verdaccio:4873/ \
+  docker.io/library/node:22-bookworm \
+  bash -lc 'node -e "fetch(\"http://medichain-verdaccio:4873/-/ping\").then((r)=>process.exit(r.ok?0:1)).catch((err)=>{ console.error(err); process.exit(1); })"; npm install --global pnpm@9.15.9 --registry "$NPM_CONFIG_REGISTRY" --loglevel warn; pnpm config get registry'
+```
+
+The final line should be:
+
+```text
+http://medichain-verdaccio:4873/
+```
+
 ## Lock Modes
 
 Locked mode is the default:
