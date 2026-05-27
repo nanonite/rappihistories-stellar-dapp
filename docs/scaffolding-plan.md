@@ -32,51 +32,49 @@ Add next:
 
 ## Phase 2: Workspace Layout
 
-Create target directories:
+Current transitional target directories:
 
 ```text
-apps/
+components/
   web/
   api-indexer/
   kms-gate/
-packages/
-  domain/
-  crypto/
-  storage/
-  kms/
-  stellar-client/
-  wallet/
-  test-fixtures/
+  packages/
+    domain/
+    crypto/
+    storage/
+    kms/
+    stellar-client/
+    wallet/
+    test-fixtures/
+  contracts/
 e2e/
 ```
 
-Decision needed before this phase:
+Resolved for Chainlink issue #68:
 
-- migrate the existing Next app from `src/` into `apps/web/` immediately, or keep `src/` temporarily and scaffold only new packages/services around it.
-
-Recommendation:
-
-- keep `src/` temporarily until the first architecture review is complete
-- create `packages/`, `apps/api-indexer/`, and `apps/kms-gate/` first
-- migrate the web app after the Docker workflow is defined
+- root package metadata is integration-owned and named `medichain-integration`
+- component-owned code lives under `components/`
+- root `e2e/`, `.forgejo/`, Compose, Verdaccio config, and docs remain
+  integration-owned
 
 ## Phase 3: TypeScript Domain Package
 
-Create `packages/domain`.
+Create `components/packages/domain`.
 
 Initial files:
 
 ```text
-packages/domain/src/clinical-history.ts
-packages/domain/src/identity.ts
-packages/domain/src/access-broker.ts
-packages/domain/src/kms.ts
-packages/domain/src/emergency.ts
-packages/domain/src/prescription.ts
-packages/domain/src/supplychain.ts
-packages/domain/src/reservation-privacy.ts
-packages/domain/src/audit.ts
-packages/domain/src/index.ts
+components/packages/domain/src/clinical-history.ts
+components/packages/domain/src/identity.ts
+components/packages/domain/src/access-broker.ts
+components/packages/domain/src/kms.ts
+components/packages/domain/src/emergency.ts
+components/packages/domain/src/prescription.ts
+components/packages/domain/src/supplychain.ts
+components/packages/domain/src/reservation-privacy.ts
+components/packages/domain/src/audit.ts
+components/packages/domain/src/index.ts
 ```
 
 Initial exports:
@@ -109,7 +107,7 @@ No runtime dependency should be added unless necessary.
 
 Create interface-only packages first.
 
-`packages/storage`:
+`components/packages/storage`:
 
 - `RecordStorageProvider`
 - `RecordLocatorResolver`
@@ -117,7 +115,7 @@ Create interface-only packages first.
 - `IpfsRecordStorageProvider` placeholder
 - `PhysicalDriveRecordLocator` placeholder
 
-`packages/crypto`:
+`components/packages/crypto`:
 
 - `EnvelopeEncryptionService`
 - `KeyWrappingService`
@@ -127,7 +125,7 @@ Create interface-only packages first.
 - `DelayedAuditSigner`
 - `DrugClassCommitmentService`
 
-`packages/kms`:
+`components/packages/kms`:
 
 - `KmsGate`
 - `LocalStubGate`
@@ -135,14 +133,14 @@ Create interface-only packages first.
 - `ReleasePredicateEvaluator`
 - `BrokerStateReader`
 
-`packages/stellar-client`:
+`components/packages/stellar-client`:
 
 - `IdentityContractClient`
 - `AccessBrokerContractClient`
 - `PrescriptionContractClient`
 - `SupplychainContractClient`
 
-`packages/wallet`:
+`components/packages/wallet`:
 
 - `WalletAdapter`
 - `MockWalletAdapter`
@@ -151,18 +149,18 @@ Create interface-only packages first.
 
 ## Phase 5: API/Indexer Scaffold
 
-Create `apps/api-indexer`.
+Create `components/api-indexer`.
 
 Initial modules:
 
 ```text
-apps/api-indexer/src/events/
-apps/api-indexer/src/projections/
-apps/api-indexer/src/workflows/
-apps/api-indexer/src/storage/
-apps/api-indexer/src/routes/
-apps/api-indexer/src/notifications/
-apps/api-indexer/src/seed/
+components/api-indexer/src/events/
+components/api-indexer/src/projections/
+components/api-indexer/src/workflows/
+components/api-indexer/src/storage/
+components/api-indexer/src/routes/
+components/api-indexer/src/notifications/
+components/api-indexer/src/seed/
 ```
 
 Initial services:
@@ -180,16 +178,16 @@ No web framework choice should be locked until dependencies are reviewed. If no 
 
 ## Phase 6: KMS Gate Scaffold
 
-Create `apps/kms-gate`.
+Create `components/kms-gate`.
 
 Initial modules:
 
 ```text
-apps/kms-gate/src/routes/
-apps/kms-gate/src/predicate/
-apps/kms-gate/src/stellar/
-apps/kms-gate/src/keys/
-apps/kms-gate/src/test-vectors/
+components/kms-gate/src/routes/
+components/kms-gate/src/predicate/
+components/kms-gate/src/stellar/
+components/kms-gate/src/keys/
+components/kms-gate/src/test-vectors/
 ```
 
 Initial services:
@@ -215,11 +213,11 @@ The KMS scaffold must include tests for the release predicate even before real e
 Create contract directories:
 
 ```text
-contracts/identity/
-contracts/access-broker/
-contracts/prescription/
-contracts/supplychain/
-contracts/incentive/
+components/contracts/identity/
+components/contracts/access-broker/
+components/contracts/prescription/
+components/contracts/supplychain/
+components/contracts/incentive/
 ```
 
 Each contract starts with:
@@ -242,7 +240,7 @@ Initial contract work:
 - define public method signatures
 - add tests that verify initialization and placeholder state
 
-`contracts/access-broker` should scaffold these concepts first:
+`components/contracts/access-broker` should scaffold these concepts first:
 
 - `Tier`
 - `GrantType`

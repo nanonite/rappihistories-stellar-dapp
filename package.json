@@ -1,11 +1,13 @@
 {
-  "name": "medichain",
+  "name": "medichain-integration",
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "workspaces": [
-    "apps/*",
-    "packages/*",
+    "components/web",
+    "components/api-indexer",
+    "components/kms-gate",
+    "components/packages/*",
     "e2e"
   ],
   "scripts": {

@@ -31,14 +31,14 @@ Useful checks:
 ```bash
 nix flake check
 nix develop --command cargo --version
-nix develop --command bash -lc 'cd contracts && cargo test'
-nix develop --command bash -lc 'cd contracts && cargo build --release --target wasm32-unknown-unknown'
+nix develop --command bash -lc 'cd components/contracts && cargo test'
+nix develop --command bash -lc 'cd components/contracts && cargo build --release --target wasm32-unknown-unknown'
 ```
 
 The workspace WASM build writes artifacts under:
 
 ```text
-contracts/target/wasm32-unknown-unknown/release/
+components/contracts/target/wasm32-unknown-unknown/release/
 ```
 
 ## CI Shell
@@ -60,8 +60,8 @@ The current contract CI flow validates:
 ```bash
 nix flake check --no-write-lock-file --print-build-logs
 nix develop .#ci --command cargo --version
-nix develop .#ci --command bash -lc 'cd contracts && cargo test'
-nix develop .#ci --command bash -lc 'cd contracts && cargo build --release --target wasm32-unknown-unknown'
+nix develop .#ci --command bash -lc 'cd components/contracts && cargo test'
+nix develop .#ci --command bash -lc 'cd components/contracts && cargo build --release --target wasm32-unknown-unknown'
 ```
 
 ## Forgejo Runner Integration

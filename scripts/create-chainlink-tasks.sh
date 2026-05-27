@@ -30,16 +30,16 @@ INF1=$($CL issue create \
   -d "Convert root to pnpm monorepo with workspaces.
 
 Acceptance Criteria:
-- pnpm-workspace.yaml defines apps/*, packages/*, e2e
+- pnpm-workspace.yaml defines components/{web,api-indexer,kms-gate}, components/packages/*, e2e
 - pnpm install from root resolves all packages through Verdaccio
 - pnpm -r build succeeds (web app + placeholder packages)
-- TypeScript project references wired so packages/* can be imported in apps/* without path hacks
+- TypeScript project references wired so components/packages/* can be imported in components/{web,api-indexer,kms-gate} without path hacks
 - Root tsconfig.json uses references array; each package has its own tsconfig.json with composite: true
 
 Technical Notes:
-- Move src/ → apps/web/src/; update next.config.js, tailwind.config.js, postcss.config.js
+- Move src/ → components/web/src/; update next.config.js, tailwind.config.js, postcss.config.js
 - Existing .npmrc already points to http://localhost:4873/ — confirm it resolves through Verdaccio after restructure
-- Root tsconfig.json becomes base config; apps/web/tsconfig.json extends it
+- Root tsconfig.json becomes base config; components/web/tsconfig.json extends it
 
 Estimate: 2 days" \
   "INF-1 — Convert root to pnpm monorepo with workspaces")
@@ -53,8 +53,8 @@ INF2=$($CL issue create \
 
 Acceptance Criteria:
 - All directories exist with valid package.json + tsconfig.json:
-  - packages/domain, packages/crypto, packages/storage, packages/stellar-client, packages/wallet, packages/test-fixtures
-  - apps/web, apps/api-indexer, apps/kms-gate
+  - components/packages/domain, components/packages/crypto, components/packages/storage, components/packages/stellar-client, components/packages/wallet, components/packages/test-fixtures
+  - components/web, components/api-indexer, components/kms-gate
   - e2e/
 - Each package exports at least one placeholder symbol so TypeScript can resolve imports
 - pnpm -r typecheck passes with zero errors on skeleton files
@@ -62,7 +62,7 @@ Acceptance Criteria:
 Technical Notes:
 - Package scope: @medichain/domain, @medichain/crypto, etc.
 - Each package.json: main/types/scripts with build and typecheck scripts
-- packages/domain/src/index.ts exports DOMAIN_VERSION = '0.1.0' as smoke-test placeholder
+- components/packages/domain/src/index.ts exports DOMAIN_VERSION = '0.1.0' as smoke-test placeholder
 
 Estimate: 1 day" \
   "INF-2 — Scaffold package and app skeletons")
@@ -102,8 +102,8 @@ INF4=$($CL issue create \
   -d "Set up Cargo workspace for all 5 Soroban contracts.
 
 Acceptance Criteria:
-- contracts/Cargo.toml is a workspace manifest listing all 5 contracts as members
-- cargo build --release --target wasm32-unknown-unknown from contracts/ succeeds for all contracts
+- components/contracts/Cargo.toml is a workspace manifest listing all 5 contracts as members
+- cargo build --release --target wasm32-unknown-unknown from components/contracts/ succeeds for all contracts
 - Each new contract directory contains src/lib.rs, src/types.rs, src/storage.rs, src/events.rs, src/errors.rs, src/test.rs
 - All 5 contracts compile to .wasm without warnings
 
@@ -133,7 +133,7 @@ Acceptance Criteria:
 Technical Notes:
 - Script at scripts/deploy-contracts.sh using soroban contract deploy CLI from stellar-dev/
 - contract-ids.json shape: { identity, accessBroker, prescription, supplychain, incentive }
-- Seed data in apps/api-indexer/src/seed/seed.ts — runs only when NODE_ENV=development and DB is empty
+- Seed data in components/api-indexer/src/seed/seed.ts — runs only when NODE_ENV=development and DB is empty
 
 Estimate: 1 day" \
   "INF-5 — Contract deployment script and seed data runner")
@@ -148,12 +148,12 @@ echo "=== EPIC DOM — Domain Package ==="
 DOM1=$($CL issue create \
   -p high \
   -l "domain" -l "typescript" \
-  -d "Core clinical and access types for packages/domain.
+  -d "Core clinical and access types for components/packages/domain.
 
 Acceptance Criteria:
-- packages/domain/src/clinical-history.ts exports ClinicalHistoryTier, RecordCategory, RecordLocator, RecordMeta
-- packages/domain/src/access.ts exports AccessGrant, Capability, PresenceProof, CredentialProof, GrantType
-- packages/domain/src/audit.ts exports online and delayed-offline audit event types
+- components/packages/domain/src/clinical-history.ts exports ClinicalHistoryTier, RecordCategory, RecordLocator, RecordMeta
+- components/packages/domain/src/access.ts exports AccessGrant, Capability, PresenceProof, CredentialProof, GrantType
+- components/packages/domain/src/audit.ts exports online and delayed-offline audit event types
 - Zero any-casts; strict TypeScript
 
 Technical Notes:
@@ -174,7 +174,7 @@ DOM2=$($CL issue create \
   -d "Release predicate as pure function — the canonical implementation all layers share.
 
 Acceptance Criteria:
-- packages/domain/src/predicate.ts exports evaluateReleasePredicate(grant, caller, nowSeconds): PredicateResult
+- components/packages/domain/src/predicate.ts exports evaluateReleasePredicate(grant, caller, nowSeconds): PredicateResult
 - PredicateResult: { allowed: true } | { allowed: false; reason: PredicateDenyReason }
 - PredicateDenyReason: NO_GRANT | WRONG_REQUESTER | REVOKED | VETOED | BEFORE_REVEAL | EXPIRED
 - 8 unit tests cover every deny branch and the allow case
@@ -195,12 +195,12 @@ chainlink issue block $DOM2 $DOM1 -q 2>/dev/null || true
 DOM3=$($CL issue create \
   -p medium \
   -l "domain" -l "typescript" \
-  -d "Prescription and supply-chain types for packages/domain.
+  -d "Prescription and supply-chain types for components/packages/domain.
 
 Acceptance Criteria:
-- packages/domain/src/prescription.ts exports PrescriptionState, Prescription, ReservationPrivacyRef, DispensationReceipt
-- packages/domain/src/supplychain.ts exports DrugProduct, DrugBatch, BatchStatus, InventoryUnit, UnitStatus, CustodyRecord
-- packages/domain/src/identity.ts exports Role, CredentialRef, CredentialStatus, IssuerRecord
+- components/packages/domain/src/prescription.ts exports PrescriptionState, Prescription, ReservationPrivacyRef, DispensationReceipt
+- components/packages/domain/src/supplychain.ts exports DrugProduct, DrugBatch, BatchStatus, InventoryUnit, UnitStatus, CustodyRecord
+- components/packages/domain/src/identity.ts exports Role, CredentialRef, CredentialStatus, IssuerRecord
 - All types must match the Soroban contracttype structs in IDB, BKR, RX, SC epics
 
 Technical Notes:
@@ -223,9 +223,9 @@ IDB1=$($CL issue create \
   -d "Identity contract types and storage layout.
 
 Acceptance Criteria:
-- contracts/identity/src/types.rs defines Role, CredentialStatus, CredentialRef, IssuerRecord
-- contracts/identity/src/storage.rs defines DataKey with storage class annotations
-- contracts/identity/src/errors.rs defines IdentityError with every error code
+- components/contracts/identity/src/types.rs defines Role, CredentialStatus, CredentialRef, IssuerRecord
+- components/contracts/identity/src/storage.rs defines DataKey with storage class annotations
+- components/contracts/identity/src/errors.rs defines IdentityError with every error code
 - Contract compiles to WASM
 
 Technical Notes:
@@ -274,8 +274,8 @@ BKR1=$($CL issue create \
 READ docs/claude/access-broker-contract-design.md IN FULL before writing any code. The bug catalog in §5 (Holes A-I) describes exactly what must be prevented.
 
 Acceptance Criteria:
-- contracts/access-broker/src/types.rs matches the structs in the design doc: Tier, GrantType, RecordMeta, Grant, PresenceProof, CredentialProof, Capability, Error
-- contracts/access-broker/src/storage.rs defines DataKey with explicit storage class for each variant
+- components/contracts/access-broker/src/types.rs matches the structs in the design doc: Tier, GrantType, RecordMeta, Grant, PresenceProof, CredentialProof, Capability, Error
+- components/contracts/access-broker/src/storage.rs defines DataKey with explicit storage class for each variant
 - Contract compiles to WASM
 
 Storage class assignments:
@@ -418,7 +418,7 @@ KMS1=$($CL issue create \
   -d "KMS gate scaffold and Stellar committed-state reader.
 
 Acceptance Criteria:
-- apps/kms-gate/src/stellar/BrokerStateReader.ts fetches a grant entry from committed Stellar ledger state using getLedgerEntries — NOT simulateTransaction
+- components/kms-gate/src/stellar/BrokerStateReader.ts fetches a grant entry from committed Stellar ledger state using getLedgerEntries — NOT simulateTransaction
 - BrokerStateReader.readGrant(grantId: string): Promise<AccessGrant | null> returns null if entry doesn't exist
 - A grant that was only simulated (never submitted) returns null
 
@@ -440,8 +440,8 @@ KMS2=$($CL issue create \
   -d "Release predicate evaluator and key store stub.
 
 Acceptance Criteria:
-- apps/kms-gate/src/predicate/ReleasePredicateEvaluator.ts IMPORTS evaluateReleasePredicate from @medichain/domain — does NOT reimplement it
-- apps/kms-gate/src/keys/LocalKeyStore.ts is a stub: returns a deterministic wrapped AES-256 key for a given grantId (stub; will be replaced by Lit Protocol later)
+- components/kms-gate/src/predicate/ReleasePredicateEvaluator.ts IMPORTS evaluateReleasePredicate from @medichain/domain — does NOT reimplement it
+- components/kms-gate/src/keys/LocalKeyStore.ts is a stub: returns a deterministic wrapped AES-256 key for a given grantId (stub; will be replaced by Lit Protocol later)
 - All 8 deny cases from DOM-2 tests pass against the evaluator in integration
 
 This is the 'stub decentralization, never stub the predicate' boundary — the key store is the stub, not the predicate.
@@ -477,7 +477,7 @@ KMS4=$($CL issue create \
   -d "Conformance test suite — the predicate truth table. CI must run this on every PR.
 
 Acceptance Criteria:
-- apps/kms-gate/src/test-vectors/conformance.test.ts has 15+ grant states with expected decisions
+- components/kms-gate/src/test-vectors/conformance.test.ts has 15+ grant states with expected decisions
 - Every row tested against both evaluateReleasePredicate (pure) AND the live KMS HTTP endpoint — must agree
 - CI runs this suite on every PR
 
@@ -513,8 +513,8 @@ STR1=$($CL issue create \
   -d "Storage provider interface and MinIO implementation.
 
 Acceptance Criteria:
-- packages/storage/src/RecordStorageProvider.ts defines the interface: store(Uint8Array) -> Promise<RecordLocator>, retrieve(RecordLocator) -> Promise<Uint8Array>
-- packages/storage/src/MinioRecordStorageProvider.ts implements it
+- components/packages/storage/src/RecordStorageProvider.ts defines the interface: store(Uint8Array) -> Promise<RecordLocator>, retrieve(RecordLocator) -> Promise<Uint8Array>
+- components/packages/storage/src/MinioRecordStorageProvider.ts implements it
 - Bucket medichain-records auto-created on first use if missing
 - store returns RecordLocator with locatorType='s3' and contentCommitment = SHA-256 of stored bytes
 - retrieve verifies SHA-256 against locator.contentCommitment before returning — tampered blobs throw CommitmentMismatchError
@@ -537,9 +537,9 @@ STR2=$($CL issue create \
   -d "Envelope encryption service for clinical payloads.
 
 Acceptance Criteria:
-- packages/crypto/src/EnvelopeEncryptionService.ts: encrypt(plaintext) -> { ciphertext, wrappedKey, keyId }; decrypt(ciphertext, wrappedKey) -> plaintext
+- components/packages/crypto/src/EnvelopeEncryptionService.ts: encrypt(plaintext) -> { ciphertext, wrappedKey, keyId }; decrypt(ciphertext, wrappedKey) -> plaintext
 - AES-256-GCM for payload encryption; per-record random 256-bit DEK
-- packages/crypto/src/CommitmentService.ts computes sha256(ciphertext) and returns hex
+- components/packages/crypto/src/CommitmentService.ts computes sha256(ciphertext) and returns hex
 - Tests: encrypt → commitment → store → retrieve → verify commitment → decrypt → matches plaintext
 
 Technical Notes:
@@ -563,7 +563,7 @@ IDX1=$($CL issue create \
   -d "Postgres schema and migrations for the api-indexer.
 
 Acceptance Criteria:
-- apps/api-indexer/src/storage/migrations/001_initial.sql creates all tables
+- components/api-indexer/src/storage/migrations/001_initial.sql creates all tables
 - Tables: grants, records, audit_events, prescriptions, inventory_units, credentials, notifications, _indexer_state
 - Migration runs automatically on api-indexer startup
 - All foreign keys defined; indexes on grants.grantee, grants.record_id, audit_events.patient_pseudonym
@@ -585,7 +585,7 @@ IDX2=$($CL issue create \
   -d "Event ingestor — Soroban event poller into Postgres.
 
 Acceptance Criteria:
-- apps/api-indexer/src/events/EventIngestor.ts polls getEvents on Stellar RPC for all 4 contract event streams
+- components/api-indexer/src/events/EventIngestor.ts polls getEvents on Stellar RPC for all 4 contract event streams
 - Each event decoded and upserted into appropriate Postgres table
 - Ingestor stores last processed ledger sequence and resumes from there on restart (no re-processing)
 - Events handled: access, revoke, veto, fallback, audit_off, cred_issue, cred_revoke, rec_reg
@@ -652,9 +652,9 @@ WLT1=$($CL issue create \
   -d "WalletAdapter interface and MockWalletAdapter — replaces the current prompt() wallet.
 
 Acceptance Criteria:
-- packages/wallet/src/WalletAdapter.ts defines: getPublicKey(): Promise<string>, signTransaction(xdr, network): Promise<string>, isConnected(): Promise<bool>
-- packages/wallet/src/MockWalletAdapter.ts implements it with a hardcoded test keypair — used by E2E tests
-- Current src/hooks/useWallet.ts (localStorage-based, no signing) replaced by apps/web/src/hooks/useWallet.ts wrapping a WalletAdapter
+- components/packages/wallet/src/WalletAdapter.ts defines: getPublicKey(): Promise<string>, signTransaction(xdr, network): Promise<string>, isConnected(): Promise<bool>
+- components/packages/wallet/src/MockWalletAdapter.ts implements it with a hardcoded test keypair — used by E2E tests
+- Current src/hooks/useWallet.ts (localStorage-based, no signing) replaced by components/web/src/hooks/useWallet.ts wrapping a WalletAdapter
 
 Estimate: 1 day" \
   "WLT-1 — WalletAdapter interface and MockWalletAdapter")
@@ -668,7 +668,7 @@ WLT2=$($CL issue create \
   -d "Freighter wallet adapter — connects the web app to Freighter for real transaction signing.
 
 Acceptance Criteria:
-- packages/wallet/src/FreighterWalletAdapter.ts wraps @stellar/freighter-api
+- components/packages/wallet/src/FreighterWalletAdapter.ts wraps @stellar/freighter-api
 - getPublicKey() calls freighter.getPublicKey()
 - signTransaction() calls freighter.signTransaction(xdr, { network })
 - If Freighter not installed, isConnected() returns false and getPublicKey() throws FreighterNotInstalledError
@@ -676,7 +676,7 @@ Acceptance Criteria:
 
 Technical Notes:
 - Check Verdaccio cache for @stellar/freighter-api first — may already be cached
-- packages/wallet/src/index.ts exports factory: createWalletAdapter(type: 'freighter' | 'mock')
+- components/packages/wallet/src/index.ts exports factory: createWalletAdapter(type: 'freighter' | 'mock')
 
 Estimate: 1 day" \
   "WLT-2 — Freighter wallet adapter")
@@ -693,15 +693,15 @@ T31=$($CL issue create \
   -d "Patient stores an encrypted clinical record (first vertical slice touching every layer).
 
 Acceptance Criteria:
-- apps/web/src/app/(patient)/store-record/page.tsx allows patient to upload a clinical record (JSON)
+- components/web/src/app/(patient)/store-record/page.tsx allows patient to upload a clinical record (JSON)
 - Record encrypted via EnvelopeEncryptionService, stored in MinIO via MinioRecordStorageProvider
 - Commitment and locator registered on broker via register_record
 - Transaction signed by Freighter
 - After submission, patient sees record in dashboard with commitment and tier badge
 
 Technical Notes:
-- packages/stellar-client/src/AccessBrokerContractClient.ts wraps register_record invocation
-- Migrate existing dashboard from src/app/dashboard/page.tsx → apps/web/src/app/(patient)/dashboard/page.tsx
+- components/packages/stellar-client/src/AccessBrokerContractClient.ts wraps register_record invocation
+- Migrate existing dashboard from src/app/dashboard/page.tsx → components/web/src/app/(patient)/dashboard/page.tsx
 
 Estimate: 2 days" \
   "T3-1 — Store encrypted record (patient side)")
@@ -738,7 +738,7 @@ Acceptance Criteria:
 - Clinician app sends POST /v1/release to kms-gate with grantId and requesterAuth
 - KMS reads committed Stellar state, evaluates predicate, returns wrappedKey
 - Clinician app retrieves ciphertext from MinIO, verifies SHA-256 against commitment, decrypts
-- Clinician sees plaintext record in apps/web/src/app/(clinician)/record-view/page.tsx
+- Clinician sees plaintext record in components/web/src/app/(clinician)/record-view/page.tsx
 - If grant revoked between request_access and KMS release, KMS returns { denied: true, reason: 'REVOKED' } and UI shows error
 
 Estimate: 2 days" \
@@ -775,7 +775,7 @@ T22=$($CL issue create \
   -d "Responder initiates break-glass access with veto countdown.
 
 Acceptance Criteria:
-- apps/web/src/app/(responder)/emergency-access/page.tsx allows credentialed responder to initiate break-glass
+- components/web/src/app/(responder)/emergency-access/page.tsx allows credentialed responder to initiate break-glass
 - Responder provides: patient lookup (address or card scan), credential proof, presence proof (if available), reason code
 - request_access called with tier=EmergencyBundle; broker emits audit event, creates grant with reveal_at=now+30
 - UI shows countdown to revealAt and 'pending veto window' state
@@ -859,7 +859,7 @@ T12=$($CL issue create \
   -d "Offline card reader and deferred audit submission for responders.
 
 Acceptance Criteria:
-- apps/web/src/app/(responder)/offline-card/page.tsx accepts QR scan or file paste of card JSON
+- components/web/src/app/(responder)/offline-card/page.tsx accepts QR scan or file paste of card JSON
 - Responder app verifies card signature using token_pubkey from the card payload
 - On verification success, displays card contents (allergies, meds, conditions)
 - Creates local deferred audit record in localStorage: { cardId, readAtDeviceTime, responderRef, deviceSignature }
@@ -882,7 +882,7 @@ RX1=$($CL issue create \
   -d "Prescription contract types and storage layout — the bridge object.
 
 Acceptance Criteria:
-- contracts/prescription/src/types.rs defines PrescriptionState, Prescription, Reservation, DispensationReceipt
+- components/contracts/prescription/src/types.rs defines PrescriptionState, Prescription, Reservation, DispensationReceipt
 - Prescription(BytesN<32>) = persistent; Reservation(BytesN<32>) = temporary (escrow auto-expires)
 - Contract compiles to WASM
 
@@ -954,7 +954,7 @@ SC1=$($CL issue create \
   -d "Supply-chain contract types and storage layout.
 
 Acceptance Criteria:
-- contracts/supplychain/src/types.rs defines: DrugProduct, DrugBatch, BatchStatus, InventoryUnit, UnitStatus, CustodyRecord, ColdChainStatus, OpposingInterestAttestation
+- components/contracts/supplychain/src/types.rs defines: DrugProduct, DrugBatch, BatchStatus, InventoryUnit, UnitStatus, CustodyRecord, ColdChainStatus, OpposingInterestAttestation
 - BatchStatus: Available, Reserved, Dispensed, Quarantined, Expired
 - Storage: Batch(BytesN<32>) persistent, Unit(BytesN<32>) persistent, BatchUnits(BytesN<32>) persistent (manifest), ColdChainLog(BytesN<32>) temporary
 - Contract compiles to WASM
@@ -1029,7 +1029,7 @@ WEB1=$($CL issue create \
   -d "Role-based routing and layout for all five roles.
 
 Acceptance Criteria:
-- apps/web/src/app/ has route groups: (patient), (clinician), (pharmacy), (responder), (admin)
+- components/web/src/app/ has route groups: (patient), (clinician), (pharmacy), (responder), (admin)
 - Each group has its own layout with role-appropriate navigation
 - Wallet connection gate: all role pages redirect to /connect if no wallet connected
 - Existing pages (src/app/dashboard, src/app/doctor) migrated into appropriate role groups

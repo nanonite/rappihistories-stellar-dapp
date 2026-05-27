@@ -41,23 +41,50 @@ job containers. Node, pnpm, Rust, Soroban, wasm targets, backend runtimes, KMS
 SDKs, database clients, browser test tooling, and future service-specific
 compilers belong in disposable job containers or component-owned images.
 
-## Current Monorepo Phase
+## Transitional Layout
 
-Until component boundaries are stable, keep the working layout intact:
+Until component boundaries are stable, keep component-owned source inside this
+repository under `components/`. The repository root is the integration
+orchestration surface.
 
-- web app source and pnpm workspace entries remain here
-- the current `Dockerfile.web`, Verdaccio service, and web CI flow remain the
-  working Node/Docker path
-- Soroban contract code remains under `contracts/`
-- Docker Compose remains the local orchestration surface
-- docs and ADRs remain here as the shared source of architecture decisions
-- e2e scaffolding belongs here because it exercises the product loop across
-  multiple components
+- `components/web/` owns the web dApp source and package metadata
+- `components/api-indexer/` owns the API/indexer scaffold
+- `components/kms-gate/` owns the KMS gate scaffold
+- `components/packages/` owns shared TypeScript packages
+- `components/contracts/` owns the Soroban contract workspace
+- root `docker-compose.yml`, `Dockerfile.web`, Verdaccio config, runner config,
+  docs, and `.forgejo/` remain integration-owned
+- root `e2e/` remains integration-owned because it exercises product flows
+  across components
+
+The current pnpm workspace globs intentionally point at the component package
+locations under `components/`, while the root package is named
+`medichain-integration` to reflect the repository role.
+
+The working command paths during this transitional layout are:
+
+```bash
+pnpm --filter @medichain/web dev
+pnpm -r typecheck
+pnpm -r build
+nix develop --command bash -lc 'cd components/contracts && cargo test'
+nix develop --command bash -lc 'cd components/contracts && cargo build --release --target wasm32-unknown-unknown'
+```
 
 Do not move large code trees into new repositories during this phase. Add
 clearer ownership markers first, then split only when each component has a
 stable build contract and an integration test can consume the component as a
 pinned artifact, image, or revision.
+
+## Current Working Surfaces
+
+- component-owned source lives under `components/`
+- the current `Dockerfile.web`, Verdaccio service, and web CI flow remain the
+  working Node/Docker path
+- Docker Compose remains the local orchestration surface
+- docs and ADRs remain here as the shared source of architecture decisions
+- e2e scaffolding belongs here because it exercises the product loop across
+  multiple components
 
 ## Target Component Repositories
 

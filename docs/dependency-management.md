@@ -184,7 +184,7 @@ After changing the lockfile, seed the Verdaccio cache for locked Docker builds:
 docker run --rm --network medichain-npm-cache-only \
   -e NPM_CONFIG_REGISTRY=http://verdaccio:4873/ \
   -v "$PWD:$PWD" -w "$PWD" \
-  stellar-dapp-workspace-template:latest \
+  web-dev-template:latest \
   bash -lc 'pnpm fetch --force --store-dir /tmp/medichain-pnpm-store --registry http://verdaccio:4873/'
 ./lock-npmjs.sh
 ```
@@ -196,7 +196,7 @@ docker run --rm --network medichain-npm-cache-only \
   -e CI=true \
   -e NPM_CONFIG_REGISTRY=http://verdaccio:4873/ \
   -v "$PWD:$PWD" -w "$PWD" \
-  stellar-dapp-workspace-template:latest \
+  web-dev-template:latest \
   bash -lc 'pnpm install --frozen-lockfile --registry http://verdaccio:4873/'
 ```
 

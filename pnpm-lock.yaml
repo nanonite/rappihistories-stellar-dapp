@@ -8,26 +8,26 @@ importers:
 
   .: {}
 
-  apps/api-indexer:
+  components/api-indexer:
     devDependencies:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
 
-  apps/kms-gate:
+  components/kms-gate:
     devDependencies:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
 
-  apps/web:
+  components/web:
     dependencies:
       '@elenajs/core':
         specifier: 1.0.0
         version: 1.0.0
       '@medichain/shared':
         specifier: workspace:*
-        version: link:../../packages/shared
+        version: link:../packages/shared
       '@stellar/stellar-sdk':
         specifier: ^13.1.0
         version: 13.3.0
@@ -72,43 +72,43 @@ importers:
         specifier: ^5.5.0
         version: 5.9.3
 
-  packages/crypto:
+  components/packages/crypto:
     devDependencies:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
 
-  packages/domain:
+  components/packages/domain:
     devDependencies:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
 
-  packages/shared:
+  components/packages/shared:
     devDependencies:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
 
-  packages/stellar-client:
+  components/packages/stellar-client:
     devDependencies:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
 
-  packages/storage:
+  components/packages/storage:
     devDependencies:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
 
-  packages/test-fixtures:
+  components/packages/test-fixtures:
     devDependencies:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
 
-  packages/wallet:
+  components/packages/wallet:
     devDependencies:
       typescript:
         specifier: ^5.5.0

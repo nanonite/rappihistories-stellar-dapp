@@ -13,8 +13,8 @@ dist/
 
 # rust
 target/
-contracts/target/
-contracts/**/test_snapshots/
+components/contracts/target/
+components/contracts/**/test_snapshots/
 
 # misc
 .DS_Store

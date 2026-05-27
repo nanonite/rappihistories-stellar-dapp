@@ -30,7 +30,7 @@ The current repository has:
 - ElenaJS (`@elenajs/core`) installed as a runtime dependency and used for a progressive custom workflow-status element on the homepage
 - a placeholder contract client in `src/lib/contract.ts`
 - a basic wallet state hook using local storage
-- a Soroban contract under `contracts/medical-record`
+- a Soroban contract under `components/contracts/medical-record`
 
 ElenaJS is approved through the Verdaccio package flow and is now part of the web runtime. Keep it scoped to component boundaries where progressive web components help portability or cross-framework reuse; plain React remains appropriate for app-specific screens.
 
@@ -288,31 +288,31 @@ The first milestone should make these services start even if most business logic
 
 ## Target Workspace Layout
 
-During the MVP this repository can contain the full monorepo layout below. The
-long-term direction is for this repository to become the integration and e2e
-orchestration workspace, with component source and component CI split only
-after stable boundaries exist.
+During the MVP this repository is the `medichain-integration` workspace. The
+root owns integration orchestration, while component-owned source lives under
+`components/` so each group can later become a separate repository, submodule,
+or pinned artifact without another large path migration.
 
-Proposed structure:
+Transitional structure:
 
 ```text
-apps/
+components/
   web/
   api-indexer/
   kms-gate/
-contracts/
-  identity/
-  access-broker/
-  prescription/
-  supplychain/
-  incentive/
-packages/
-  domain/
-  crypto/
-  storage/
-  stellar-client/
-  wallet/
-  test-fixtures/
+  contracts/
+    identity/
+    access-broker/
+    prescription/
+    supplychain/
+    incentive/
+  packages/
+    domain/
+    crypto/
+    storage/
+    stellar-client/
+    wallet/
+    test-fixtures/
 e2e/
 docs/
   adr/
@@ -321,7 +321,9 @@ docs/
   scaffolding-plan.md
 ```
 
-The existing `src/` app can either be migrated into `apps/web/` or kept temporarily while scaffolding the new workspace shape. The cleaner long-term layout is `apps/web/`.
+Root `.forgejo/`, `docker-compose.yml`, Verdaccio config, `Dockerfile.web`,
+the root pnpm/TypeScript metadata, and integration docs stay at the repository
+root because they orchestrate component builds and local services.
 
 ## Domain Model
 
@@ -458,7 +460,7 @@ Key operations:
 
 ## Node/TypeScript Module Scaffolds
 
-### `packages/domain`
+### `components/packages/domain`
 
 Pure TypeScript types and validation.
 
@@ -478,7 +480,7 @@ Suggested classes/interfaces:
 - `Credential`
 - `KmsReleasePredicate`
 
-### `packages/storage`
+### `components/packages/storage`
 
 Provider abstraction for encrypted payload locations.
 
@@ -490,7 +492,7 @@ Suggested interfaces/classes:
 - `PhysicalDriveRecordLocator`
 - `RecordLocatorResolver`
 
-### `packages/crypto`
+### `components/packages/crypto`
 
 Encryption, commitment, proof, and signature utilities.
 
@@ -503,7 +505,7 @@ Suggested interfaces/classes:
 - `PresenceProofVerifier`
 - `DelayedAuditSigner`
 
-### `packages/kms`
+### `components/packages/kms`
 
 KMS gate interface and local MVP implementation.
 
@@ -516,7 +518,7 @@ Suggested interfaces/classes:
 - `ReleasePredicateEvaluator`
 - `BrokerStateReader`
 
-### `packages/stellar-client`
+### `components/packages/stellar-client`
 
 Typed contract clients and transaction helpers.
 
@@ -527,7 +529,7 @@ Suggested clients:
 - `PrescriptionContractClient`
 - `SupplychainContractClient`
 
-### `packages/wallet`
+### `components/packages/wallet`
 
 Wallet abstraction for app and tests.
 
@@ -538,7 +540,7 @@ Suggested interfaces/classes:
 - `FreighterWalletAdapter`
 - `ServerTestSigner`
 
-### `apps/api-indexer`
+### `components/api-indexer`
 
 Workflow APIs and projections.
 
@@ -570,11 +572,11 @@ src/
 Suggested contract scaffolds:
 
 ```text
-contracts/identity/
-contracts/access-broker/
-contracts/prescription/
-contracts/supplychain/
-contracts/incentive/
+components/contracts/identity/
+components/contracts/access-broker/
+components/contracts/prescription/
+components/contracts/supplychain/
+components/contracts/incentive/
 ```
 
 Implementation should begin with types, storage keys, events, errors, and tests before business logic becomes complex.
@@ -712,7 +714,8 @@ Each centralized choice needs a successor:
 
 These should be resolved before implementation goes beyond scaffolding:
 
-- Should the repo migrate immediately to `apps/` and `packages/`, or should the existing `src/` app remain until the first vertical slice works?
+- Which component groups should be extracted first once `components/` package
+  boundaries and CI contracts are stable?
 - Should the MVP storage backend be MinIO first, or should IPFS be included in the first scaffold?
 - How much grant metadata should be public on-chain versus hidden behind commitments?
 - What exact credential model should the MVP use for clinicians, pharmacies, and responders?

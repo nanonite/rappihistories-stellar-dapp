@@ -16,8 +16,17 @@ RUN npm install --global pnpm@9.15.9 --registry "${NPM_CONFIG_REGISTRY}"
 
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
-COPY apps/web/package.json apps/web/package.json
-COPY packages/shared/package.json packages/shared/package.json
+COPY components/api-indexer/package.json components/api-indexer/package.json
+COPY components/kms-gate/package.json components/kms-gate/package.json
+COPY components/web/package.json components/web/package.json
+COPY components/packages/crypto/package.json components/packages/crypto/package.json
+COPY components/packages/domain/package.json components/packages/domain/package.json
+COPY components/packages/shared/package.json components/packages/shared/package.json
+COPY components/packages/stellar-client/package.json components/packages/stellar-client/package.json
+COPY components/packages/storage/package.json components/packages/storage/package.json
+COPY components/packages/test-fixtures/package.json components/packages/test-fixtures/package.json
+COPY components/packages/wallet/package.json components/packages/wallet/package.json
+COPY e2e/package.json e2e/package.json
 RUN pnpm install --frozen-lockfile --registry "${NPM_CONFIG_REGISTRY}"
 
 FROM base AS builder
@@ -35,8 +44,8 @@ ENV PORT=3000
 ENV NPM_CONFIG_REGISTRY=http://verdaccio:4873/
 ENV npm_config_registry=http://verdaccio:4873/
 
-COPY --from=builder /app/apps/web/.next/standalone ./
-COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder /app/components/web/.next/standalone ./
+COPY --from=builder /app/components/web/.next/static ./components/web/.next/static
 
 EXPOSE 3000
-CMD ["node", "apps/web/server.js"]
+CMD ["node", "components/web/server.js"]

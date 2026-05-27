@@ -1,4 +1,4 @@
-# Dev Workflow - Stellar dApp
+# Dev Workflow - Medichain Integration
 
 ## Architecture
 
@@ -11,8 +11,12 @@ Host or development VM
     - npm-cache-only internal network for package installs
     - package-uplink network for Verdaccio-only npmjs fetches
   Workspace
-    - Next.js app in src/
-    - Soroban contracts in contracts/
+    - integration orchestration at the repository root
+    - Next.js app in components/web/
+    - service scaffolds in components/api-indexer/ and components/kms-gate/
+    - shared TypeScript packages in components/packages/
+    - Soroban contracts in components/contracts/
+    - cross-component e2e scaffolding in e2e/
     - Stellar and design references
 ```
 
@@ -154,8 +158,8 @@ Frontend:
 Soroban contracts:
 
 ```bash
-cargo build --target wasm32-unknown-unknown --release
-cargo test
+nix develop --command bash -lc 'cd components/contracts && cargo build --target wasm32-unknown-unknown --release'
+nix develop --command bash -lc 'cd components/contracts && cargo test'
 ```
 
 Transaction flow:
