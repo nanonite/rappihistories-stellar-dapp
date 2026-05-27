@@ -265,6 +265,11 @@ attached to the normal `package-uplink` network for approved upstream fetches.
 
 ## Docker Development Stack
 
+The long-term repository and CI ownership boundary is documented in
+[`docs/integration-workspace.md`](integration-workspace.md). This architecture
+document describes the product and workspace shape; the integration workspace
+doc defines which future component repo owns each CI/job-container toolchain.
+
 Target compose services:
 
 ```text
@@ -282,6 +287,11 @@ e2e
 The first milestone should make these services start even if most business logic is still scaffolded.
 
 ## Target Workspace Layout
+
+During the MVP this repository can contain the full monorepo layout below. The
+long-term direction is for this repository to become the integration and e2e
+orchestration workspace, with component source and component CI split only
+after stable boundaries exist.
 
 Proposed structure:
 

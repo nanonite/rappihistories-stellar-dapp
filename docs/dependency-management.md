@@ -70,6 +70,12 @@ Set `WEB_PORT=3000` when port 3000 is available.
 
 ## Forgejo CI Job Containers
 
+For the long-term repository and runner boundary, see
+[`docs/integration-workspace.md`](integration-workspace.md). This dependency
+document describes the current web/Node monorepo path; component repos should
+eventually own their own CI workflow and disposable job image instead of
+installing every toolchain on the Forgejo runner host or runner container.
+
 Forgejo Actions jobs run through a Docker-in-Docker daemon. The repository
 `.npmrc` intentionally points to `http://localhost:4873/` for host-side
 developer installs, but `localhost` inside a DIND job container is the job

@@ -2,6 +2,8 @@ name: CI
 
 on: push
 
+# Current monorepo CI is web/Node focused. Keep future component toolchains in
+# component-owned job containers; see docs/integration-workspace.md.
 env:
   NPM_CONFIG_REGISTRY: http://medichain-verdaccio:4873/
   npm_config_registry: http://medichain-verdaccio:4873/

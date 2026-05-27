@@ -264,6 +264,12 @@ Do not implement real cross-contract workflows until the contract boundaries are
 
 ## Phase 8: Docker Baseline
 
+Repository ownership note: keep this Docker baseline working in the monorepo,
+but use [`docs/integration-workspace.md`](integration-workspace.md) as the
+boundary for future component-owned CI. Contract reproducibility work should
+remain contract-focused; it should not grow into a universal workspace flake
+that carries web, service, KMS, and e2e toolchains together.
+
 Create or update:
 
 ```text
