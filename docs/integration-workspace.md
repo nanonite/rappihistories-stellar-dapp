@@ -80,7 +80,8 @@ toolchain.
 For the current repo, `ubuntu-latest` maps to a Node 22 job container because
 the active CI workflow is web/pnpm-focused. That mapping is acceptable for the
 monorepo phase. It should not become the universal answer for contract,
-backend, KMS, or e2e jobs.
+backend, KMS, or e2e jobs. The live Compose-managed mapping is documented in
+[`forgejo-runner-labels.md`](forgejo-runner-labels.md).
 
 As components split:
 

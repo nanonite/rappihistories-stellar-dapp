@@ -75,6 +75,8 @@ For the long-term repository and runner boundary, see
 document describes the current web/Node monorepo path; component repos should
 eventually own their own CI workflow and disposable job image instead of
 installing every toolchain on the Forgejo runner host or runner container.
+For the current `ubuntu-latest` runner label contract, see
+[`docs/forgejo-runner-labels.md`](forgejo-runner-labels.md).
 
 Forgejo Actions jobs run through a Docker-in-Docker daemon. The repository
 `.npmrc` intentionally points to `http://localhost:4873/` for host-side
