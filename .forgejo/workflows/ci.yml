@@ -31,3 +31,29 @@ jobs:
 
       - name: Typecheck
         run: pnpm typecheck
+
+  contract-toolchain:
+    runs-on: nix
+    env:
+      NIX_CONFIG: experimental-features = nix-command flakes
+    steps:
+      - name: Checkout repository
+        run: |
+          nix shell nixpkgs#git --command sh -c '
+            git init .
+            git remote add origin "${{ github.server_url }}/${{ github.repository }}.git"
+            git fetch --depth 1 origin "${{ github.ref }}"
+            git checkout --detach "${{ github.sha }}"
+          '
+
+      - name: Validate Nix flake
+        run: nix flake check --no-write-lock-file --print-build-logs
+
+      - name: Inspect contract toolchain
+        run: nix develop .#ci --command cargo --version
+
+      - name: Run native contract tests
+        run: nix develop .#ci --command bash -lc 'cd contracts && cargo test'
+
+      - name: Build contract WASM
+        run: nix develop .#ci --command bash -lc 'cd contracts && cargo build --release --target wasm32-unknown-unknown'

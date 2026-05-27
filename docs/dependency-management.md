@@ -122,6 +122,31 @@ The final line should be:
 http://medichain-verdaccio:4873/
 ```
 
+## Nix Contract Toolchain Boundary
+
+`flake.nix` defines only the Soroban contract toolchain: Rust/Cargo with the
+`wasm32-unknown-unknown` target, Rust formatting/lint support, Binaryen, and
+native build/link tools needed by contract crates. Use it locally with:
+
+```bash
+nix develop
+```
+
+Use the CI variant from Forgejo contract job containers:
+
+```bash
+nix develop .#ci
+```
+
+This flake intentionally does not include Node.js, pnpm, Docker, Docker Compose,
+or backend/KMS service runtimes. Node dependency installs still use the
+Verdaccio approval and cache flow in this document. Web/dApp work remains on
+the Docker plus Verdaccio path; service toolchains should get their own
+component-owned container or flake only when their boundaries justify it.
+
+See [`docs/nix-toolchain.md`](nix-toolchain.md) for contract validation commands
+and Forgejo runner integration details.
+
 ## Lock Modes
 
 Locked mode is the default:
