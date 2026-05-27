@@ -11,6 +11,11 @@ out/
 next-env.d.ts
 dist/
 
+# rust
+target/
+contracts/target/
+contracts/**/test_snapshots/
+
 # misc
 .DS_Store
 .env.local

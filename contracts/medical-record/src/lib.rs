@@ -6,7 +6,7 @@ use soroban_sdk::{contract, contractimpl, contracttype, Address, Bytes, Env, Map
 pub struct Record {
     pub doctor: Address,
     pub timestamp: u64,
-    pub data_hash: Bytes, 
+    pub data_hash: Bytes,
     pub record_type: String,
     pub notes: String,
 }
@@ -69,7 +69,10 @@ impl MedicalRecordContract {
         let key = DataKey::Patient(patient.clone());
         let mut state: Patient = env.storage().persistent().get(&key).unwrap();
 
-        let authorized = state.authorized_doctors.get(doctor.clone()).unwrap_or(false);
+        let authorized = state
+            .authorized_doctors
+            .get(doctor.clone())
+            .unwrap_or(false);
         assert!(authorized, "Doctor not authorized for this patient");
 
         state.records.push_back(Record {

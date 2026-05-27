@@ -1,5 +1,5 @@
 [package]
-name = "medical-record"
+name = "supplychain"
 version = "0.1.0"
 edition = "2021"
 
