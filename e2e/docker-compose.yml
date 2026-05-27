@@ -1,8 +1,9 @@
-# Repository-owned Verdaccio cache for controlled npm installs.
+# Web-owned Verdaccio cache for controlled npm installs.
 #
-# Default mode is locked: ./verdaccio-config.yaml has no npmjs uplink.
-# To approve a new package temporarily, run ./unlock-npmjs.sh. Re-lock with
-# ./lock-npmjs.sh after the package has been cached.
+# Default mode is locked: components/web/verdaccio-config.yaml has no npmjs
+# uplink. To approve a new package temporarily, run
+# components/web/unlock-npmjs.sh. Re-lock with components/web/lock-npmjs.sh
+# after the package has been cached.
 
 x-npm-cache-only: &npm-cache-only
   environment:
@@ -23,7 +24,7 @@ services:
     image: verdaccio/verdaccio:6
     container_name: medichain-verdaccio
     volumes:
-      - ${VERDACCIO_CONFIG:-./verdaccio-config.yaml}:/verdaccio/conf/config.yaml:ro
+      - ${VERDACCIO_CONFIG:-../components/web/verdaccio-config.yaml}:/verdaccio/conf/config.yaml:ro
       - verdaccio-storage:/verdaccio/storage
     ports:
       - "127.0.0.1:4873:4873"
@@ -43,8 +44,8 @@ services:
 
   web:
     build:
-      context: .
-      dockerfile: Dockerfile.web
+      context: ../components
+      dockerfile: web/Dockerfile
       args:
         NODE_IMAGE: ${NODE_IMAGE:-web-dev-template:latest}
         NPM_CONFIG_REGISTRY: http://verdaccio:4873/
@@ -97,8 +98,8 @@ services:
       - --label
       - nix:docker://${FORGEJO_NIX_RUNNER_IMAGE:-docker.io/nixos/nix:latest}
     volumes:
-      - ./.forgejo/runner-config.yml:/etc/forgejo-runner/config.yml:ro
-      - ${FORGEJO_RUNNER_TOKEN_FILE:-./.runtime/forgejo-runner/token}:/run/secrets/forgejo-runner-token:ro
+      - ../.forgejo/runner-config.yml:/etc/forgejo-runner/config.yml:ro
+      - ${FORGEJO_RUNNER_TOKEN_FILE:-../.runtime/forgejo-runner/token}:/run/secrets/forgejo-runner-token:ro
     networks:
       - forgejo-ci
       - npm-cache-only

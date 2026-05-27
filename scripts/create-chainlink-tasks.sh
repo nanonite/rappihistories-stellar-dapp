@@ -32,14 +32,14 @@ INF1=$($CL issue create \
 Acceptance Criteria:
 - pnpm-workspace.yaml defines components/{web,api-indexer,kms-gate}, components/packages/*, e2e
 - pnpm install from root resolves all packages through Verdaccio
-- pnpm -r build succeeds (web app + placeholder packages)
+- cd components/web && pnpm build succeeds for the web app
 - TypeScript project references wired so components/packages/* can be imported in components/{web,api-indexer,kms-gate} without path hacks
-- Root tsconfig.json uses references array; each package has its own tsconfig.json with composite: true
+- TypeScript configs are component-owned; each package has its own tsconfig.json with composite: true
 
 Technical Notes:
 - Move src/ → components/web/src/; update next.config.js, tailwind.config.js, postcss.config.js
-- Existing .npmrc already points to http://localhost:4873/ — confirm it resolves through Verdaccio after restructure
-- Root tsconfig.json becomes base config; components/web/tsconfig.json extends it
+- components/web/.npmrc points to http://localhost:4873/ — confirm it resolves through Verdaccio after restructure
+- components/web/tsconfig.json stays self-contained so the web component can become a submodule
 
 Estimate: 2 days" \
   "INF-1 — Convert root to pnpm monorepo with workspaces")
@@ -57,7 +57,7 @@ Acceptance Criteria:
   - components/web, components/api-indexer, components/kms-gate
   - e2e/
 - Each package exports at least one placeholder symbol so TypeScript can resolve imports
-- pnpm -r typecheck passes with zero errors on skeleton files
+- cd components/web && pnpm typecheck passes with zero errors for the web package and referenced shared packages
 
 Technical Notes:
 - Package scope: @medichain/domain, @medichain/crypto, etc.
@@ -76,7 +76,7 @@ INF3=$($CL issue create \
   -d "Expand Docker Compose: postgres, minio, stellar-local, api-indexer, kms-gate.
 
 Acceptance Criteria:
-- docker compose up starts all 8 services: verdaccio, web, api-indexer, kms-gate, postgres, minio, stellar-local, contract-runner
+- docker compose -f e2e/docker-compose.yml up starts all 8 services: verdaccio, web, api-indexer, kms-gate, postgres, minio, stellar-local, contract-runner
 - Postgres healthcheck passes (pg_isready)
 - MinIO healthcheck passes (HTTP 200 on /minio/health/live)
 - stellar-local starts the Quickstart image and exposes Soroban RPC on port 8000
@@ -87,7 +87,7 @@ Technical Notes:
 - stellar-local: stellar/quickstart:testing image, --enable-soroban-rpc flag
 - Postgres: postgres:16-alpine, POSTGRES_DB=medichain POSTGRES_USER=medichain POSTGRES_PASSWORD=medichain
 - MinIO: minio/minio:latest, server /data --console-address ':9001', MINIO_ROOT_USER=medichain
-- Add Dockerfile.api-indexer and Dockerfile.kms-gate following Dockerfile.web pattern
+- Add components/api-indexer/Dockerfile and components/kms-gate/Dockerfile following components/web/Dockerfile pattern
 - STELLAR_RPC_URL=http://stellar-local:8000 injected into api-indexer and kms-gate
 
 Estimate: 2 days" \

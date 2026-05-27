@@ -53,10 +53,12 @@ e2e/
 
 Resolved for Chainlink issue #68:
 
-- root package metadata is integration-owned and named `medichain-integration`
+- web package metadata and pnpm lock/config are owned by `components/web`
 - component-owned code lives under `components/`
-- root `e2e/`, `.forgejo/`, Compose, Verdaccio config, and docs remain
-  integration-owned
+- root `e2e/`, `.forgejo/`, Compose, and docs remain integration-owned
+- when converted to submodules, split `components/web`, `components/contracts`,
+  `components/api-indexer`, `components/kms-gate`, and `components/packages`
+  as the initial repository boundaries
 
 ## Phase 3: TypeScript Domain Package
 
@@ -271,11 +273,11 @@ that carries web, service, KMS, and e2e toolchains together.
 Create or update:
 
 ```text
-docker-compose.yml
-Dockerfile.web
-Dockerfile.api-indexer
-Dockerfile.kms-gate
-Dockerfile.contract-runner
+e2e/docker-compose.yml
+components/web/Dockerfile
+components/api-indexer/Dockerfile
+components/kms-gate/Dockerfile
+components/contracts/Dockerfile
 Dockerfile.e2e
 docs/local-development.md
 ```
@@ -300,9 +302,9 @@ Decision needed:
 Resolved dependency-cache baseline:
 
 - Verdaccio runs as the repository-owned `verdaccio` Docker Compose service.
-- Locked mode uses `verdaccio-config.yaml` with no npmjs uplink.
-- Approved package installs use `./unlock-npmjs.sh`, then `pnpm add`, then
-  `./lock-npmjs.sh`.
+- Locked mode uses `components/web/verdaccio-config.yaml` with no npmjs uplink.
+- Approved package installs use `components/web/unlock-npmjs.sh`, then
+  `pnpm add` from `components/web`, then `components/web/lock-npmjs.sh`.
 - The Docker volume `verdaccio-storage` persists cached packages across
   container recreation.
 

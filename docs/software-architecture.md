@@ -26,9 +26,9 @@ The prescription remains the bridge object: a private clinical event on the pati
 
 The current repository has:
 
-- a Next.js frontend under `src/`
+- a Next.js frontend under `components/web/src/`
 - ElenaJS (`@elenajs/core`) installed as a runtime dependency and used for a progressive custom workflow-status element on the homepage
-- a placeholder contract client in `src/lib/contract.ts`
+- a placeholder contract client in `components/web/src/lib/contract.ts`
 - a basic wallet state hook using local storage
 - a Soroban contract under `components/contracts/medical-record`
 
@@ -251,11 +251,12 @@ Responsibilities:
 - support reproducible local development
 - run independently of sbx-managed containers or `sbx policy`
 
-Default mode is locked: `verdaccio-config.yaml` has no npmjs uplink and serves
-only packages already present in the Verdaccio storage volume. Approved package
-installs temporarily restart Verdaccio with `verdaccio-config.unlocked.yaml`
-through `./unlock-npmjs.sh`; `./lock-npmjs.sh` returns the service to locked
-mode after caching the package.
+Default mode is locked: `components/web/verdaccio-config.yaml` has no npmjs
+uplink and serves only packages already present in the Verdaccio storage
+volume. Approved package installs temporarily restart Verdaccio with
+`components/web/verdaccio-config.unlocked.yaml` through
+`components/web/unlock-npmjs.sh`; `components/web/lock-npmjs.sh` returns the
+service to locked mode after caching the package.
 
 Package-installing dApp, wallet, and service containers should attach only to
 the internal `npm-cache-only` Compose network and use the `*npm-cache-only`
@@ -321,9 +322,12 @@ docs/
   scaffolding-plan.md
 ```
 
-Root `.forgejo/`, `docker-compose.yml`, Verdaccio config, `Dockerfile.web`,
-the root pnpm/TypeScript metadata, and integration docs stay at the repository
-root because they orchestrate component builds and local services.
+Root `.forgejo/`, TypeScript reference metadata, and integration docs stay in
+the integration workspace because they orchestrate component builds and local
+services. The Docker Compose integration harness lives at
+`e2e/docker-compose.yml`. Component-owned build contracts live with their
+components: `components/web/Dockerfile`, `components/web/pnpm-lock.yaml`,
+`components/web/verdaccio-config.yaml`, and `components/contracts/flake.nix`.
 
 ## Domain Model
 

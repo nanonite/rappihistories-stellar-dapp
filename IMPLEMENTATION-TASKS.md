@@ -21,7 +21,7 @@ This document is the implementation task breakdown for the MediChain Stellar/Sor
 
 ## Prerequisites (before any task starts)
 
-1. **Package approval:** New npm dependencies go through Verdaccio. Run `./unlock-npmjs.sh`, install, then `./lock-npmjs.sh`. Packages needed across the plan: `@stellar/freighter-api`, `minio` (or AWS S3 SDK), a lightweight HTTP framework for Node services, `qrcode`, `tweetnacl` (or use stellar-sdk's crypto). Check Verdaccio cache first.
+1. **Package approval:** New web npm dependencies go through Verdaccio. Run `components/web/unlock-npmjs.sh`, install from `components/web`, then `components/web/lock-npmjs.sh`. Packages needed across the plan: `@stellar/freighter-api`, `minio` (or AWS S3 SDK), a lightweight HTTP framework for Node services, `qrcode`, `tweetnacl` (or use stellar-sdk's crypto). Check Verdaccio cache first.
 2. **Stellar tooling:** The `stellar-dev/skills/` directory contains reference skills for Soroban contract development. Read `stellar-dev/skills/soroban/SKILL.md` before writing any contract code. Skills are also installed as Claude Code slash commands — use `/stellar-soroban`, `/stellar-dapp`, etc.
 3. **Design references:** `open-design/skills/` contains UI design references. Use `/design-dashboard`, `/design-saas-landing`, etc. for all new pages — the frontend must not look like a generic crypto demo.
 4. **Environment:** `.env.local` has `NEXT_PUBLIC_STELLAR_NETWORK=testnet` and `NEXT_PUBLIC_MEDICAL_CONTRACT_ID`. New contract IDs will be added here and to a shared Docker volume as the contracts are deployed.
@@ -64,15 +64,15 @@ This document is the implementation task breakdown for the MediChain Stellar/Sor
 **Acceptance Criteria:**
 - `pnpm-workspace.yaml` defines `components/{web,api-indexer,kms-gate}`, `components/packages/*`, `e2e`
 - `pnpm install` from root resolves all packages through Verdaccio
-- `pnpm -r build` succeeds (web app + placeholder packages)
+- `cd components/web && pnpm build` succeeds for the web app
 - TypeScript project references wired so `components/packages/*` can be imported in `components/{web,api-indexer,kms-gate}` without path hacks
-- Root `tsconfig.json` uses `references` array; each package has its own `tsconfig.json` with `composite: true`
+- TypeScript configs are component-owned; each package has its own `tsconfig.json` with `composite: true`
 
 **Technical Notes:**
-- Current root `package.json` at `package.json` grows a `"workspaces"` field; `pnpm-workspace.yaml` is the canonical source for pnpm
+- `components/web/package.json` owns the web package metadata; `components/web/pnpm-workspace.yaml` is the canonical source for web pnpm workspaces
 - Move `src/` → `components/web/src/`; update `next.config.js`, `tailwind.config.js`, `postcss.config.js` to live under `components/web/`
-- Move root `tsconfig.json` to base config; `components/web/tsconfig.json` extends it
-- Existing `.npmrc` already points to `http://localhost:4873/` — confirm it still resolves through Verdaccio after restructure
+- Keep `components/web/tsconfig.json` self-contained so the web component can become a submodule
+- Existing `components/web/.npmrc` points to `http://localhost:4873/` — confirm it still resolves through Verdaccio after restructure
 
 ---
 
@@ -87,7 +87,7 @@ This document is the implementation task breakdown for the MediChain Stellar/Sor
   - `components/web`, `components/api-indexer`, `components/kms-gate`
   - `e2e/`
 - Each package exports at least one placeholder symbol so TypeScript can resolve imports
-- `pnpm -r typecheck` passes with zero errors on skeleton files
+- `cd components/web && pnpm typecheck` passes with zero errors for the web package and referenced shared packages
 
 **Technical Notes:**
 - Package scope: `@medichain/domain`, `@medichain/crypto`, etc.
@@ -102,7 +102,7 @@ This document is the implementation task breakdown for the MediChain Stellar/Sor
 **Blocked by:** INF-1
 
 **Acceptance Criteria:**
-- `docker compose up` starts all 8 services without manual intervention: `verdaccio`, `web`, `api-indexer`, `kms-gate`, `postgres`, `minio`, `stellar-local`, `contract-runner`
+- `docker compose -f e2e/docker-compose.yml up` starts all 8 services without manual intervention: `verdaccio`, `web`, `api-indexer`, `kms-gate`, `postgres`, `minio`, `stellar-local`, `contract-runner`
 - Postgres healthcheck passes (`pg_isready`)
 - MinIO healthcheck passes (HTTP 200 on `/minio/health/live`)
 - `stellar-local` starts the Quickstart image and exposes Soroban RPC on port 8000
@@ -110,11 +110,11 @@ This document is the implementation task breakdown for the MediChain Stellar/Sor
 - None of the new services reach `registry.npmjs.org` directly (all npm traffic through Verdaccio)
 
 **Technical Notes:**
-- Current `docker-compose.yml` has `web` and `verdaccio` only — add all new services here
+- Current `e2e/docker-compose.yml` has `web` and `verdaccio` only — add all new services here
 - `stellar-local`: `stellar/quickstart:testing` image, `--enable-soroban-rpc` flag
 - Postgres: `postgres:16-alpine`, volume `postgres-data`, env `POSTGRES_DB=medichain POSTGRES_USER=medichain POSTGRES_PASSWORD=medichain`
 - MinIO: `minio/minio:latest`, volume `minio-data`, command `server /data --console-address ":9001"`, env `MINIO_ROOT_USER=medichain MINIO_ROOT_PASSWORD=medichain`
-- Add `Dockerfile.api-indexer` and `Dockerfile.kms-gate` following the pattern of `Dockerfile.web` — both Node 20 images, install via Verdaccio
+- Add `components/api-indexer/Dockerfile` and `components/kms-gate/Dockerfile` following the pattern of `components/web/Dockerfile` — both Node 22 images, install via Verdaccio
 - `STELLAR_RPC_URL=http://stellar-local:8000` injected into `api-indexer` and `kms-gate`
 
 ---
@@ -1277,7 +1277,7 @@ These apply to every task. Violations block merge.
 | `components/contracts/access-broker/src/lib.rs` | BKR-4, BKR-5 | All security-critical decisions converge here |
 | `components/packages/domain/src/predicate.ts` | DOM-2 | Canonical release predicate — source of truth |
 | `components/kms-gate/src/predicate/ReleasePredicateEvaluator.ts` | KMS-2 | Must import from `@medichain/domain`, never reimplement |
-| `docker-compose.yml` | INF-3 | Full Docker stack — no integration work until all services run |
+| `e2e/docker-compose.yml` | INF-3 | Full Docker stack — no integration work until all services run |
 | `components/contracts/prescription/src/lib.rs` | RX-3 | `dispense` dual-auth is the anti-ghost-dispense control |
 
 ---

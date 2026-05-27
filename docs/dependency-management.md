@@ -2,14 +2,14 @@
 
 ## Verdaccio Service
 
-The project uses a repository-owned Verdaccio Docker container as the npm
+The project uses an e2e-owned Verdaccio Docker container as the npm
 registry/cache.
 
 ```bash
-docker compose up -d verdaccio
+docker compose -f e2e/docker-compose.yml up -d verdaccio
 ```
 
-The repo `.npmrc` points pnpm to:
+The web component `.npmrc` points pnpm to:
 
 ```text
 http://localhost:4873/
@@ -39,7 +39,7 @@ services:
     <<: *npm-cache-only
     build:
       context: .
-    command: pnpm install --frozen-lockfile
+    command: cd components/web && pnpm install --frozen-lockfile
 ```
 
 The anchor sets package-manager registry environment variables to
@@ -51,11 +51,11 @@ access it actually needs.
 
 ## Web Image
 
-The production web image is built by `Dockerfile.web`:
+The production web image is built by `components/web/Dockerfile`:
 
 ```bash
-DOCKER_BUILDKIT=0 docker compose build web
-docker compose up -d web
+DOCKER_BUILDKIT=0 docker compose -f e2e/docker-compose.yml build web
+docker compose -f e2e/docker-compose.yml up -d web
 ```
 
 The build stage installs `pnpm@9.15.9` and project dependencies from
@@ -78,7 +78,7 @@ installing every toolchain on the Forgejo runner host or runner container.
 For the current `ubuntu-latest` runner label contract, see
 [`docs/forgejo-runner-labels.md`](forgejo-runner-labels.md).
 
-Forgejo Actions jobs run through a Docker-in-Docker daemon. The repository
+Forgejo Actions jobs run through a Docker-in-Docker daemon. The web component
 `.npmrc` intentionally points to `http://localhost:4873/` for host-side
 developer installs, but `localhost` inside a DIND job container is the job
 container itself, not Verdaccio.
@@ -126,17 +126,20 @@ http://medichain-verdaccio:4873/
 
 ## Nix Contract Toolchain Boundary
 
-`flake.nix` defines only the Soroban contract toolchain: Rust/Cargo with the
-`wasm32-unknown-unknown` target, Rust formatting/lint support, Binaryen, and
-native build/link tools needed by contract crates. Use it locally with:
+`components/contracts/flake.nix` defines only the Soroban contract toolchain:
+Rust/Cargo with the `wasm32-unknown-unknown` target, Rust formatting/lint
+support, Binaryen, and native build/link tools needed by contract crates. Use
+it locally with:
 
 ```bash
+cd components/contracts
 nix develop
 ```
 
 Use the CI variant from Forgejo contract job containers:
 
 ```bash
+cd components/contracts
 nix develop .#ci
 ```
 
@@ -154,39 +157,39 @@ and Forgejo runner integration details.
 Locked mode is the default:
 
 ```bash
-./lock-npmjs.sh
+components/web/lock-npmjs.sh
 ```
 
-Locked mode uses `verdaccio-config.yaml`, which has no npmjs uplink. Verdaccio
-serves only packages already present in its storage volume.
+Locked mode uses `components/web/verdaccio-config.yaml`, which has no npmjs
+uplink. Verdaccio serves only packages already present in its storage volume.
 
 Unlocked mode is temporary:
 
 ```bash
-./unlock-npmjs.sh
+components/web/unlock-npmjs.sh
 ```
 
-Unlocked mode uses `verdaccio-config.unlocked.yaml`, which enables the npmjs
-uplink so approved packages can be fetched and cached.
+Unlocked mode uses `components/web/verdaccio-config.unlocked.yaml`, which
+enables the npmjs uplink so approved packages can be fetched and cached.
 
 ## Package Approval Flow
 
 1. Name the exact package and why it is needed.
 2. Human approves the package.
-3. Run `./unlock-npmjs.sh`.
+3. Run `components/web/unlock-npmjs.sh`.
 4. Install through pnpm, for example `pnpm add @elenajs/core`.
-5. Run `./lock-npmjs.sh`.
+5. Run `components/web/lock-npmjs.sh`.
 
 After changing the lockfile, seed the Verdaccio cache for locked Docker builds:
 
 ```bash
-./unlock-npmjs.sh
+components/web/unlock-npmjs.sh
 docker run --rm --network medichain-npm-cache-only \
   -e NPM_CONFIG_REGISTRY=http://verdaccio:4873/ \
-  -v "$PWD:$PWD" -w "$PWD" \
+  -v "$PWD:$PWD" -w "$PWD/components/web" \
   web-dev-template:latest \
   bash -lc 'pnpm fetch --force --store-dir /tmp/medichain-pnpm-store --registry http://verdaccio:4873/'
-./lock-npmjs.sh
+components/web/lock-npmjs.sh
 ```
 
 Then restore the workspace install from the normal local store if needed:
@@ -195,7 +198,7 @@ Then restore the workspace install from the normal local store if needed:
 docker run --rm --network medichain-npm-cache-only \
   -e CI=true \
   -e NPM_CONFIG_REGISTRY=http://verdaccio:4873/ \
-  -v "$PWD:$PWD" -w "$PWD" \
+  -v "$PWD:$PWD" -w "$PWD/components/web" \
   web-dev-template:latest \
   bash -lc 'pnpm install --frozen-lockfile --registry http://verdaccio:4873/'
 ```
@@ -208,7 +211,7 @@ or using curl/wget to fetch packages.
 For an interactive metadata review and install:
 
 ```bash
-./unlock-and-inspect.sh <package-name>
+components/web/unlock-and-inspect.sh <package-name>
 ```
 
 The helper unlocks Verdaccio, reads metadata through the local registry, prompts

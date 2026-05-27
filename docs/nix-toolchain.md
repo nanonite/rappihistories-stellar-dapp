@@ -1,15 +1,16 @@
 # Nix Contract Toolchain
 
-This repository uses `flake.nix` only for Soroban contract development and
-contract CI. It is not a universal workspace shell. Web and dApp work stays on
-the existing Docker, pnpm, and Verdaccio path described in
+The Soroban contract component owns `components/contracts/flake.nix` for
+contract development and contract CI. It is not a universal workspace shell.
+Web and dApp work stays on the existing Docker, pnpm, and Verdaccio path described in
 [`docs/dependency-management.md`](dependency-management.md).
 
 ## Local Contract Shell
 
-Enter the contract shell from the repository root:
+Enter the contract shell from the contract component:
 
 ```bash
+cd components/contracts
 nix develop
 ```
 
@@ -29,10 +30,11 @@ environment.
 Useful checks:
 
 ```bash
+cd components/contracts
 nix flake check
 nix develop --command cargo --version
-nix develop --command bash -lc 'cd components/contracts && cargo test'
-nix develop --command bash -lc 'cd components/contracts && cargo build --release --target wasm32-unknown-unknown'
+nix develop --command cargo test
+nix develop --command cargo build --release --target wasm32-unknown-unknown
 ```
 
 The workspace WASM build writes artifacts under:
@@ -46,6 +48,7 @@ components/contracts/target/wasm32-unknown-unknown/release/
 The flake also exposes `.#ci` for Forgejo contract jobs:
 
 ```bash
+cd components/contracts
 nix develop .#ci
 ```
 
@@ -58,15 +61,15 @@ flake.
 The current contract CI flow validates:
 
 ```bash
-nix flake check --no-write-lock-file --print-build-logs
-nix develop .#ci --command cargo --version
-nix develop .#ci --command bash -lc 'cd components/contracts && cargo test'
-nix develop .#ci --command bash -lc 'cd components/contracts && cargo build --release --target wasm32-unknown-unknown'
+nix flake check ./components/contracts --no-write-lock-file --print-build-logs
+nix develop ./components/contracts#ci --command cargo --version
+nix develop ./components/contracts#ci --command bash -lc 'cd components/contracts && cargo test'
+nix develop ./components/contracts#ci --command bash -lc 'cd components/contracts && cargo build --release --target wasm32-unknown-unknown'
 ```
 
 ## Forgejo Runner Integration
 
-`docker-compose.yml` registers a `nix` runner label:
+`e2e/docker-compose.yml` registers a `nix` runner label:
 
 ```text
 nix:docker://docker.io/nixos/nix:latest

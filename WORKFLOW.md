@@ -20,46 +20,50 @@ Host or development VM
     - Stellar and design references
 ```
 
-Verdaccio is now a repository-owned Docker Compose service. Package approval
-does not depend on an sbx-managed container or `sbx policy`; the lock state is
-controlled by which Verdaccio config file the container is running.
+Verdaccio is now an e2e-owned Docker Compose service. Package approval does not
+depend on an sbx-managed container or `sbx policy`; the lock state is controlled
+by which Verdaccio config file the container is running.
 
 ## 1. Start Local Services
 
 Start Verdaccio in locked mode:
 
 ```bash
-docker compose up -d verdaccio
+docker compose -f e2e/docker-compose.yml up -d verdaccio
 ```
 
 Check status:
 
 ```bash
-docker compose ps verdaccio
-docker compose logs -f verdaccio
+docker compose -f e2e/docker-compose.yml ps verdaccio
+docker compose -f e2e/docker-compose.yml logs -f verdaccio
 ```
 
-Configure pnpm if needed. The repo `.npmrc` already points at Verdaccio:
+Configure pnpm from the web component if needed. The web `.npmrc` already
+points at Verdaccio:
 
 ```bash
+cd components/web
 pnpm config set registry http://localhost:4873
 ```
 
 Install dependencies:
 
 ```bash
+cd components/web
 pnpm install --frozen-lockfile
 ```
 
 If a clean machine has an empty Verdaccio cache, approve the existing lockfile
-dependencies first, run `./unlock-npmjs.sh`, run the install, then re-lock with
-`./lock-npmjs.sh`.
+dependencies first, run `components/web/unlock-npmjs.sh`, run the install from
+`components/web`, then re-lock with `components/web/lock-npmjs.sh`.
 
 ## 2. Start the Dev Server
 
 For local Node development:
 
 ```bash
+cd components/web
 pnpm dev
 ```
 
@@ -69,21 +73,22 @@ If the app runs inside a VM or remote container, bind to `0.0.0.0` and use that
 environment's normal port-forwarding command:
 
 ```bash
+cd components/web
 pnpm dev --hostname 0.0.0.0
 ```
 
 For the Dockerized web runtime:
 
 ```bash
-DOCKER_BUILDKIT=0 docker compose build web
-docker compose up -d web
+DOCKER_BUILDKIT=0 docker compose -f e2e/docker-compose.yml build web
+docker compose -f e2e/docker-compose.yml up -d web
 ```
 
 Open `http://localhost:3001` by default. Override with `WEB_PORT=3000` if port
 3000 is free:
 
 ```bash
-WEB_PORT=3000 docker compose up -d web
+WEB_PORT=3000 docker compose -f e2e/docker-compose.yml up -d web
 ```
 
 The web image builds on the internal `medichain-npm-cache-only` network and
@@ -93,8 +98,9 @@ custom internal network in this environment.
 
 ## 3. Installing New Packages
 
-Default state: locked. `verdaccio-config.yaml` has no npmjs uplink, so
-Verdaccio serves only packages already present in its storage volume.
+Default state: locked. `components/web/verdaccio-config.yaml` has no npmjs
+uplink, so Verdaccio serves only packages already present in its storage
+volume.
 
 Approval flow:
 
@@ -103,19 +109,20 @@ Approval flow:
 3. Unlock Verdaccio:
 
 ```bash
-./unlock-npmjs.sh
+components/web/unlock-npmjs.sh
 ```
 
 4. Install through pnpm so the package is cached by Verdaccio:
 
 ```bash
+cd components/web
 pnpm add <pkg>
 ```
 
 5. Re-lock Verdaccio:
 
 ```bash
-./lock-npmjs.sh
+components/web/lock-npmjs.sh
 ```
 
 The scripts recreate only the Verdaccio container. The named Docker volume
@@ -158,8 +165,9 @@ Frontend:
 Soroban contracts:
 
 ```bash
-nix develop --command bash -lc 'cd components/contracts && cargo build --target wasm32-unknown-unknown --release'
-nix develop --command bash -lc 'cd components/contracts && cargo test'
+cd components/contracts
+nix develop --command cargo build --target wasm32-unknown-unknown --release
+nix develop --command cargo test
 ```
 
 Transaction flow:

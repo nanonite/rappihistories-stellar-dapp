@@ -27,10 +27,10 @@ jobs:
           test "$(pnpm config get registry)" = "${NPM_CONFIG_REGISTRY}"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: cd components/web && pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: pnpm typecheck
+        run: cd components/web && pnpm typecheck
 
   contract-toolchain:
     runs-on: nix
@@ -47,13 +47,13 @@ jobs:
           '
 
       - name: Validate Nix flake
-        run: nix flake check --no-write-lock-file --print-build-logs
+        run: nix flake check ./components/contracts --no-write-lock-file --print-build-logs
 
       - name: Inspect contract toolchain
-        run: nix develop .#ci --command cargo --version
+        run: nix develop ./components/contracts#ci --command cargo --version
 
       - name: Run native contract tests
-        run: nix develop .#ci --command bash -lc 'cd components/contracts && cargo test'
+        run: nix develop ./components/contracts#ci --command bash -lc 'cd components/contracts && cargo test'
 
       - name: Build contract WASM
-        run: nix develop .#ci --command bash -lc 'cd components/contracts && cargo build --release --target wasm32-unknown-unknown'
+        run: nix develop ./components/contracts#ci --command bash -lc 'cd components/contracts && cargo build --release --target wasm32-unknown-unknown'

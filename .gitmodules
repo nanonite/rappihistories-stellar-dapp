@@ -1,0 +1,15 @@
+[submodule "components/web"]
+	path = components/web
+	url = ./components/web
+[submodule "components/contracts"]
+	path = components/contracts
+	url = ./components/contracts
+[submodule "components/api-indexer"]
+	path = components/api-indexer
+	url = ./components/api-indexer
+[submodule "components/kms-gate"]
+	path = components/kms-gate
+	url = ./components/kms-gate
+[submodule "components/packages"]
+	path = components/packages
+	url = ./components/packages

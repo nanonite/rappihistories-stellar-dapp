@@ -47,28 +47,29 @@ Until component boundaries are stable, keep component-owned source inside this
 repository under `components/`. The repository root is the integration
 orchestration surface.
 
-- `components/web/` owns the web dApp source and package metadata
+- `components/web/` owns the web dApp source, package metadata, pnpm lockfile,
+  Verdaccio config, and web Dockerfile
 - `components/api-indexer/` owns the API/indexer scaffold
 - `components/kms-gate/` owns the KMS gate scaffold
 - `components/packages/` owns shared TypeScript packages
-- `components/contracts/` owns the Soroban contract workspace
-- root `docker-compose.yml`, `Dockerfile.web`, Verdaccio config, runner config,
-  docs, and `.forgejo/` remain integration-owned
+- `components/contracts/` owns the Soroban contract workspace, contract
+  Dockerfile, and contract Nix flake
+- `e2e/docker-compose.yml`, runner config, docs, and `.forgejo/` remain
+  integration-owned
 - root `e2e/` remains integration-owned because it exercises product flows
   across components
 
-The current pnpm workspace globs intentionally point at the component package
-locations under `components/`, while the root package is named
-`medichain-integration` to reflect the repository role.
+The web-owned pnpm workspace intentionally points from `components/web` to the
+web package and shared TypeScript packages it consumes.
 
 The working command paths during this transitional layout are:
 
 ```bash
-pnpm --filter @medichain/web dev
-pnpm -r typecheck
-pnpm -r build
-nix develop --command bash -lc 'cd components/contracts && cargo test'
-nix develop --command bash -lc 'cd components/contracts && cargo build --release --target wasm32-unknown-unknown'
+cd components/web && pnpm dev
+cd components/web && pnpm typecheck
+cd components/web && pnpm build
+cd components/contracts && nix develop --command cargo test
+cd components/contracts && nix develop --command cargo build --release --target wasm32-unknown-unknown
 ```
 
 Do not move large code trees into new repositories during this phase. Add
@@ -79,9 +80,9 @@ pinned artifact, image, or revision.
 ## Current Working Surfaces
 
 - component-owned source lives under `components/`
-- the current `Dockerfile.web`, Verdaccio service, and web CI flow remain the
-  working Node/Docker path
-- Docker Compose remains the local orchestration surface
+- `components/web/Dockerfile`, the Verdaccio service, and web CI flow remain
+  the working Node/Docker path
+- `e2e/docker-compose.yml` remains the local orchestration surface
 - docs and ADRs remain here as the shared source of architecture decisions
 - e2e scaffolding belongs here because it exercises the product loop across
   multiple components
@@ -90,12 +91,48 @@ pinned artifact, image, or revision.
 
 | Repository | Owns | CI/job-container responsibility | Should not require on runner host/container |
 | --- | --- | --- | --- |
-| `medichain-web-dapp` | Patient, clinician, and pharmacy web surfaces; wallet integration; frontend Stellar clients | Node/pnpm install through Verdaccio; web lint/typecheck/test/build; `Dockerfile.web` or equivalent web image | Rust, Soroban CLI, wasm target, backend service runtimes, KMS SDK toolchains |
+| `medichain-web-dapp` | Patient, clinician, and pharmacy web surfaces; wallet integration; frontend Stellar clients | Node/pnpm install through Verdaccio; web lint/typecheck/test/build; `components/web/Dockerfile` or equivalent web image | Rust, Soroban CLI, wasm target, backend service runtimes, KMS SDK toolchains |
 | `medichain-contracts` | Soroban contracts and contract tests | Contract-focused Nix flake or contract job image; Rust toolchain; `wasm32-unknown-unknown`; Soroban test/build commands | Node/pnpm web stack, web Docker build chain, service runtime dependencies |
 | `medichain-api-indexer` | API, event ingestion, projections, workflow service, database migrations | Backend runtime image; service tests; migration checks; API/indexer image build | Web browser tooling, Soroban compiler stack except generated clients or lightweight test fixtures |
 | `medichain-kms-gate` | Key-release predicate service, KMS adapters, security conformance tests | Security-service runtime image; predicate tests; key-release integration tests; image build | Web build stack, contract compiler stack except read-only contract client bindings |
 | `medichain-infra` | Optional home for Forgejo runner, Verdaccio, DIND, runner labels, cache policy, registry operations | Runner and registry operational checks; label/image mapping validation; no application build jobs | Product compilers, app dependencies, component test frameworks |
 | `medichain-integration` | Compose files, e2e orchestration, architecture docs, pinned component refs/submodules later, release wiring | Pull or build pinned component images; run cross-component smoke/e2e tests; validate local orchestration | Permanent ownership of component-specific compilers or package managers outside integration test images |
+
+## Submodule Split Plan
+
+Split by development boundary, not by the literal current directory tree. The
+root repository should become the integration repository and record component
+repositories as submodules when each boundary is ready.
+
+Initial submodule set:
+
+```text
+components/web              -> medichain-web
+components/contracts        -> medichain-contracts
+components/api-indexer      -> medichain-api-indexer
+components/kms-gate         -> medichain-kms-gate
+components/packages         -> medichain-ts-packages
+```
+
+Language and toolchain boundaries:
+
+- `components/web`: TypeScript/Next.js app. It owns web npm/pnpm state,
+  Verdaccio config, and its Dockerfile because it is currently the only active
+  Node application surface.
+- `components/contracts`: Rust/Soroban workspace. It owns the Nix flake,
+  contract Dockerfile, Cargo workspace, and WASM build/test contract.
+- `components/api-indexer`: TypeScript service scaffold. It should own its own
+  service Dockerfile and later its service-specific runtime dependencies.
+- `components/kms-gate`: TypeScript service scaffold. It should own its own
+  service Dockerfile and later its KMS/predicate test dependencies.
+- `components/packages`: TypeScript library workspace. Keep this as one
+  `medichain-ts-packages` repository for now because the packages share one
+  language/toolchain and are still thin scaffolds. Split individual packages
+  only after one becomes independently versioned, released, or owned.
+
+Do not convert documentation, local Stellar/design skill references, or root
+orchestration files into submodules. They remain integration-owned unless a
+future repo split gives them a concrete operational owner.
 
 ## Runner and Toolchain Contract
 

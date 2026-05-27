@@ -125,22 +125,25 @@ These are read-only design assets. Read the relevant skill when designing UI.
 
 Run these steps on first run or after a clean environment is created:
 
-1. Start the repo-owned Verdaccio container:
+1. Start the e2e-owned Verdaccio container:
    ```
-   docker compose up -d verdaccio
+   docker compose -f e2e/docker-compose.yml up -d verdaccio
    ```
 
-   The default `verdaccio-config.yaml` is locked and has no npmjs uplink.
-   Use `./unlock-npmjs.sh` only after a package is approved, then run
-   `./lock-npmjs.sh` when the package has been cached.
+   The default `components/web/verdaccio-config.yaml` is locked and has no
+   npmjs uplink. Use `components/web/unlock-npmjs.sh` only after a package is
+   approved, then run `components/web/lock-npmjs.sh` when the package has been
+   cached.
 
 2. Configure pnpm to use the local registry if `.npmrc` is not already active:
    ```
+   cd components/web
    pnpm config set registry http://localhost:4873
    ```
 
 3. Install project dependencies (goes through verdaccio):
    ```
+   cd components/web
    pnpm install --frozen-lockfile
    ```
 
@@ -149,9 +152,9 @@ Run these steps on first run or after a clean environment is created:
 ## Package Approval Protocol
 
 Verdaccio runs as a Docker Compose service from this repository. It is locked
-by default because `verdaccio-config.yaml` has no npmjs uplink. The unlocked
-configuration is `verdaccio-config.unlocked.yaml` and should be used only
-while installing an approved package.
+by default because `components/web/verdaccio-config.yaml` has no npmjs uplink.
+The unlocked configuration is `components/web/verdaccio-config.unlocked.yaml`
+and should be used only while installing an approved package.
 
 Future dApp, wallet, or other Node containers that run package-manager commands
 should use the `*npm-cache-only` Compose anchor. They must reach packages
@@ -169,9 +172,11 @@ WHEN YOU NEED A NEW NPM PACKAGE:
 
 3. After approval, unlock Verdaccio and install the package:
    ```
-   ./unlock-npmjs.sh
+   components/web/unlock-npmjs.sh
+   cd components/web
    pnpm add <name>
-   ./lock-npmjs.sh
+   cd ../..
+   components/web/lock-npmjs.sh
    ```
 
    This goes through Verdaccio, which fetches and caches the package.
@@ -180,7 +185,7 @@ DO NOT:
 - Attempt to change npm registry config to bypass Verdaccio
 - Use curl, wget, or any other tool to download packages directly
   instead of using the package manager through Verdaccio
-- Edit Verdaccio config or `docker-compose.yml` without human instruction
+- Edit Verdaccio config or `e2e/docker-compose.yml` without human instruction
 
 ## Stellar Network Configuration
 
@@ -206,17 +211,18 @@ NEXT_PUBLIC_STELLAR_MAINNET_RPC_URL=
 
 Start the project's dev server:
 ```
+cd components/web
 pnpm dev
 ```
 
 If the dev server runs inside a VM or remote container, bind to `0.0.0.0`
 and publish the port using that environment's port-forwarding mechanism.
 
-The Dockerized web runtime is built with `Dockerfile.web` and the repo-owned
-Compose service:
+The Dockerized web runtime is built with `components/web/Dockerfile` and the
+e2e-owned Compose service:
 ```
-DOCKER_BUILDKIT=0 docker compose build web
-docker compose up -d web
+DOCKER_BUILDKIT=0 docker compose -f e2e/docker-compose.yml build web
+docker compose -f e2e/docker-compose.yml up -d web
 ```
 
 It serves on `http://localhost:3001` by default. Set `WEB_PORT=3000` if port
@@ -226,11 +232,13 @@ It serves on `http://localhost:3001` by default. Set `WEB_PORT=3000` if port
 
 ### Frontend tests
 ```
+cd components/web
 pnpm test
 ```
 
 ### Soroban contract tests
 ```
+cd components/contracts
 cargo test
 ```
 

@@ -12,7 +12,8 @@ runner must advertise a concrete label mapping that tells Forgejo which
 execution backend and default job image should handle jobs requesting
 `ubuntu-latest`.
 
-The current Compose-managed runner in `docker-compose.yml` owns that mapping:
+The current Compose-managed runner in `e2e/docker-compose.yml` owns that
+mapping:
 
 ```yaml
 command:
@@ -43,14 +44,14 @@ bare label can make the runner look for a container image literally named
 
 After runner or DIND maintenance:
 
-1. Confirm `docker-compose.yml` still maps
+1. Confirm `e2e/docker-compose.yml` still maps
    `ubuntu-latest:docker://docker.io/library/node:22-bookworm`.
 2. Confirm `.forgejo/workflows/ci.yml` still uses `runs-on: ubuntu-latest` for
    the current web/Node job.
 3. Restart the `forgejo-runner` service so it advertises the mapping:
 
    ```bash
-   docker compose --profile ci up -d forgejo-runner
+   docker compose -f e2e/docker-compose.yml --profile ci up -d forgejo-runner
    ```
 
 4. In the Forgejo runner admin view, confirm the runner advertises
