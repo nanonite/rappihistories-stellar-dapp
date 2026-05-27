@@ -25,6 +25,8 @@ A separate KMS gate releases or re-wraps the cryptographic material needed for r
 - reveal time has passed, where applicable
 - grant has not expired
 
+The access broker's return values must be safe to expose during Soroban simulation/preflight. The broker may return locator, commitment, and grant identifier, but never a decryption key, wrapped key, bearer secret, or PHI.
+
 The blockchain write records the access event metadata only:
 
 - patient pseudonym or patient record identifier

@@ -39,6 +39,8 @@ A short consent veto window should sit between emergency grant creation and non-
 
 If a patient token/card is absent, bricked, or unreadable, the protocol should support a tokenless fallback for a vital subset only. The fallback requires heavier proof, such as institution plus second-clinician co-signature, and a distinct audit topic for monitoring.
 
+The tokenless fallback should not require biometric identity or a nation-state identity registry. A patient may opt out of carrying a token/card; the consequence is narrower and more heavily audited access, not denial of emergency care.
+
 ## Minimum Controls
 
 Emergency access must include these controls:

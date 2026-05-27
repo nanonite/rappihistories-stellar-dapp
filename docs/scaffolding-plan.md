@@ -74,6 +74,7 @@ packages/domain/src/kms.ts
 packages/domain/src/emergency.ts
 packages/domain/src/prescription.ts
 packages/domain/src/supplychain.ts
+packages/domain/src/reservation-privacy.ts
 packages/domain/src/audit.ts
 packages/domain/src/index.ts
 ```
@@ -99,6 +100,8 @@ Initial exports:
 - `InventoryUnit`
 - `DispensationReceipt`
 - `OpposingInterestAttestation`
+- `ReservationPrivacyRef`
+- `DrugClassCommitment`
 
 No runtime dependency should be added unless necessary.
 
@@ -122,6 +125,7 @@ Create interface-only packages first.
 - `EmergencyCardSigner`
 - `PresenceProofVerifier`
 - `DelayedAuditSigner`
+- `DrugClassCommitmentService`
 
 `packages/kms`:
 
@@ -252,6 +256,10 @@ Initial contract work:
 - `veto`
 - `submit_delayed_audit`
 
+Access-broker tests should include a simulation-safety invariant: every public return type is non-secret and safe to expose before transaction submission.
+
+All contracts should explicitly choose storage classes for each key. Temporary storage can clean up short-lived entries, but every security decision must still check explicit business timestamps such as `expires_at` and `reveal_at`.
+
 Do not implement real cross-contract workflows until the contract boundaries are reviewed.
 
 ## Phase 8: Docker Baseline
@@ -330,11 +338,12 @@ After access-broker/KMS/emergency flows work:
 1. seed pharmacy, drug product, batch, and inventory unit
 2. issue encrypted prescription event to patient record
 3. create pseudonymous prescription commitment
-4. reserve eligible in-spec inventory
-5. verify quarantine prevents reservation
-6. dispense with pharmacy credential and patient active co-signature
-7. write encrypted dispensation receipt commitment back to Tier 3
-8. record opposing-interest attestation for custody/dispense proof where modeled
+4. create fresh reservation privacy reference
+5. reserve eligible in-spec inventory
+6. verify quarantine prevents reservation
+7. dispense with pharmacy credential and patient active co-signature
+8. write encrypted dispensation receipt commitment back to Tier 3
+9. record opposing-interest attestation for custody/dispense proof where modeled
 
 ## Non-Goals During Scaffolding
 
@@ -360,6 +369,8 @@ Before implementation:
 - credential model selected for MVP
 - emergency veto-window behavior accepted
 - offline-card audit/budget behavior accepted
+- reservation privacy level accepted
+- Soroban storage class and renewal strategy accepted
 - local chain strategy selected
 - package/workspace migration plan selected
 - Docker baseline accepted

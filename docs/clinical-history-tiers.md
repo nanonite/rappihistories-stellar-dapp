@@ -149,12 +149,15 @@ This tier is for break-glass access. It is broader than the offline card, but st
 - Requires emergency attestation or reason code.
 - Prefers proof of patient presence through a tapped card/token when available.
 - If the token is absent, lost, or failed, supports a tokenless fallback: institution plus second-clinician co-sign, vital subset only, and heavier audit.
+- Does not require biometric identity or a nation-state identity registry for fallback. Opting out of a card/token is allowed; the consequence is narrower, noisier, slower access, not denial of emergency care.
 - Creates an emergency grant on the access broker with `revealAt`, `expiresAt`, `revoked`, and `vetoed` state.
 - Gives a conscious patient a short veto window before the fuller emergency key is released.
 - Uses a criticality-graduated window: the most time-critical, least-stigmatizing micro-subset can be instant; the fuller emergency payload waits for the veto window.
 - The KMS releases the decryption key only after the grant is committed, unrevoked, un-vetoed, in-window, and bound to the requester.
 - Writes an audit event immediately when online.
 - Patient or representative is notified afterward when possible.
+
+The veto window depends on notification delivery and the patient's ability to act. Dead phones, notification failures, or intentional jamming can defeat the veto prompt. That residual is accepted as a bounded, targeted risk against one physically-present patient, not as a silent mass-exfiltration path.
 
 ### Data Format
 
@@ -235,6 +238,8 @@ Recommended on-chain/access metadata:
 - raw document archive
 - payment and insurance records
 - supply-chain or prescription reservation history unless directly relevant to current medication safety
+
+Tier 2 should not expose the patient's public reservation history. Medication safety belongs in the emergency bundle through curated medication data and source commitments, not by crawling the public supply-chain graph.
 
 ## Tier 3: Full Clinical History
 

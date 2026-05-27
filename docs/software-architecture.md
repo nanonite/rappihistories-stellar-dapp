@@ -92,6 +92,8 @@ Responsibilities:
 
 The broker is a policy and audit layer, not a key vault. It must never return decryption keys, wrapped keys, or PHI.
 
+The contract return value must be safe to publish. Soroban clients preflight calls by simulation, and simulation can expose return values without committing state or emitting a durable audit event. Any value that would be unsafe in a simulation response does not belong in a contract return value.
+
 ### KMS Gate
 
 Key-release layer separate from the broker.
@@ -187,6 +189,8 @@ Responsibilities:
 
 Dispensation co-signature is a core anti-fraud rule. It prevents ghost dispensing to fictitious or absent patients.
 
+The public reservation footprint should not become a patient medication-history graph. The MVP should at least use fresh unlinkable reservation identifiers per prescription. A hardened path can add class-level commitments or zero-knowledge reservation proofs so the supply chain can verify a legitimate matching prescription without publishing a stable patient-drug edge.
+
 ### Supply-Chain Contract
 
 Soroban contract for inventory, custody, availability, quarantine, and dispense state.
@@ -203,6 +207,8 @@ Responsibilities:
 - record opposing-interest attestation where applicable
 
 Custody-party co-signatures are not enough. Provenance should include an opposing-interest attester, such as a liability-bearing pharmacy, patient/clinician, insurer, regulator, or audited hardware source the custody parties do not control.
+
+The blockchain does not prove physical truth by itself. Its job is to make custody, sensor, and attestation claims attributable, comparable, and auditable. Physical trust still depends on hardware, inspections, liability, and opposing incentives.
 
 ### Local Stellar/Soroban Network
 
@@ -369,8 +375,17 @@ Core types:
 - `DispensationReceipt`
 - `ColdChainStatus`
 - `OpposingInterestAttestation`
+- `ReservationPrivacyRef`
+- `DrugClassCommitment`
 
 The prescription belongs to the private clinical graph as an encrypted clinical event and to the public supply graph as a pseudonymous reservation demand.
+
+For the public graph, reserve design space for:
+
+- fresh one-time reservation addresses or identifiers
+- drug-class commitments instead of direct publication where feasible
+- Merkle inclusion proofs for MVP-grade validation
+- zero-knowledge reservation proofs as a future hardening path
 
 ## Contract Boundaries
 
@@ -401,6 +416,8 @@ Key operations:
 - revoke grant
 - submit delayed offline audit
 - query grant state
+
+Return values are non-secret by design. `request_access` can return a capability identifier, locator, and commitment, but not a wrapped key or plaintext secret.
 
 ### `prescription`
 
@@ -617,6 +634,12 @@ access broker receives dispensation receipt commitment
 - Audit trail should be reconstructed from events rather than stored as rent-bearing state.
 - Emergency-critical commitments must not fail for a storage-rent reason. Critical roots should be sponsored and kept alive.
 - Users should transact gaslessly in the MVP. Patients, clinicians, and responders should not need tokens or rent management to complete healthcare workflows.
+- Use Soroban storage classes deliberately:
+  - instance storage for compact contract config and admin/issuer roots
+  - persistent storage for active records, active grants, credential state, and critical roots that must survive
+  - temporary storage for short-lived break-glass grants, nonces, and reservation holds
+- Temporary storage TTL is hygiene, not the security clock. Business expiry must always be checked against explicit `expiresAt`/`revealAt` fields because TTL extension is not a substitute for authorization logic.
+- Gasless UX should be implemented with operator-sponsored fees, fee-bump patterns, and sponsored reserve/rent renewal where appropriate.
 
 ## Governance and Trust Model
 
@@ -689,6 +712,8 @@ These should be resolved before implementation goes beyond scaffolding:
 - Should prescription/inventory contracts be scaffolded immediately, or only after access-broker/KMS scaffolds compile?
 - How should opposing-interest attestations be represented for cold-chain and dispense proof?
 - What is the first acceptable KMS stub trust boundary?
+- What reservation privacy level is MVP-feasible: one-time identifiers only, class commitments, Merkle proofs, or a ZK proof path?
+- What exact Soroban storage class and renewal policy applies to each contract entry?
 
 ## Recommended Next Step
 

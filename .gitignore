@@ -17,3 +17,27 @@ next-env.d.ts
 # sbx
 .sbx/
 .od/
+# ExoMonad - track config and source, ignore runtime artifacts
+.exo/*
+!.exo/roles/
+!.exo/lib/
+!.exo/rules/
+.codex/
+.tangled/*
+!.tangled/workflows/
+.claude/settings.local.json
+.opencode/
+opencode.json
+
+# local agent/orchestration artifacts
+.chainlink/
+.claude/
+You are the root TL.md
+
+# generated document conversion outputs
+docs/claude/.cache/
+docs/claude/conversion_results/
+docs/claude/*_final.md
+
+# nix build symlink/output
+result
