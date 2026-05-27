@@ -90,7 +90,7 @@ services:
       - --token-url
       - file:///run/secrets/forgejo-runner-token
       - --label
-      - ubuntu-latest:docker://docker.io/library/node:20-bookworm
+      - ubuntu-latest:docker://docker.io/library/node:22-bookworm
     volumes:
       - ./.forgejo/runner-config.yml:/etc/forgejo-runner/config.yml:ro
       - ${FORGEJO_RUNNER_TOKEN_FILE:-./.runtime/forgejo-runner/token}:/run/secrets/forgejo-runner-token:ro
