@@ -1,15 +1,15 @@
 [submodule "components/web"]
 	path = components/web
-	url = ./components/web
+	url = git@github.com:nanonite/-rappihistories-stellar-dapp-web.git
 [submodule "components/contracts"]
 	path = components/contracts
-	url = ./components/contracts
+	url = git@github.com:nanonite/-rappihistories-stellar-dapp-contracts.git
 [submodule "components/api-indexer"]
 	path = components/api-indexer
-	url = ./components/api-indexer
+	url = git@github.com:nanonite/-rappihistories-stellar-dapp-api-indexer.git
 [submodule "components/kms-gate"]
 	path = components/kms-gate
-	url = ./components/kms-gate
+	url = git@github.com:nanonite/-rappihistories-stellar-dapp-kms-gate.git
 [submodule "components/packages"]
 	path = components/packages
-	url = ./components/packages
+	url = git@github.com:nanonite/-rappihistories-stellar-dapp-packages.git
