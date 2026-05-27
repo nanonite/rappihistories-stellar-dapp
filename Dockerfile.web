@@ -15,11 +15,13 @@ ENV npm_config_registry=${NPM_CONFIG_REGISTRY}
 RUN npm install --global pnpm@9.15.9 --registry "${NPM_CONFIG_REGISTRY}"
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY apps/web/package.json apps/web/package.json
+COPY packages/shared/package.json packages/shared/package.json
 RUN pnpm install --frozen-lockfile --registry "${NPM_CONFIG_REGISTRY}"
 
 FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app ./
 COPY . .
 RUN pnpm build
 
@@ -33,8 +35,8 @@ ENV PORT=3000
 ENV NPM_CONFIG_REGISTRY=http://verdaccio:4873/
 ENV npm_config_registry=http://verdaccio:4873/
 
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/apps/web/.next/standalone ./
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["node", "apps/web/server.js"]

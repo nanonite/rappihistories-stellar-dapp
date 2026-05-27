@@ -3,28 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "packageManager": "pnpm@9.15.9",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "e2e"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@elenajs/core": "1.0.0",
-    "@stellar/stellar-sdk": "^13.1.0",
-    "next": "^14.2.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
-    "react-hot-toast": "^2.4.1"
-  },
-  "devDependencies": {
-    "@types/node": "^20.14.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.4",
-    "typescript": "^5.5.0"
+    "dev": "pnpm --filter @medichain/web dev",
+    "build": "pnpm -r build",
+    "start": "pnpm --filter @medichain/web start",
+    "lint": "pnpm --filter @medichain/web lint",
+    "typecheck": "pnpm -r typecheck"
   }
 }

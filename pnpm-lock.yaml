@@ -6,11 +6,16 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  apps/web:
     dependencies:
       '@elenajs/core':
         specifier: 1.0.0
         version: 1.0.0
+      '@medichain/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@stellar/stellar-sdk':
         specifier: ^13.1.0
         version: 13.3.0
@@ -45,6 +50,12 @@ importers:
       tailwindcss:
         specifier: ^3.4.4
         version: 3.4.19
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+
+  packages/shared:
+    devDependencies:
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
