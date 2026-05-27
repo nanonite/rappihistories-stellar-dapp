@@ -30,14 +30,14 @@ export type RecordType =
   | "other";
 
 export const RECORD_TYPE_LABELS: Record<RecordType, string> = {
-  lab_result: "Lab Result",
-  prescription: "Prescription",
-  diagnosis: "Diagnosis",
-  vaccination: "Vaccination",
-  imaging: "Imaging",
-  surgery: "Surgery",
-  referral: "Referral",
-  discharge: "Discharge Summary",
-  visit_note: "Visit Note",
-  other: "Other",
+  lab_result: "Resultado de Laboratorio",
+  prescription: "Receta",
+  diagnosis: "Diagnóstico",
+  vaccination: "Vacunación",
+  imaging: "Imagenología",
+  surgery: "Cirugía",
+  referral: "Referencia",
+  discharge: "Resumen de Alta",
+  visit_note: "Nota de Consulta",
+  other: "Otro",
 };

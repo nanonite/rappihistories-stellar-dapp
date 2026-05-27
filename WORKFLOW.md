@@ -1,142 +1,174 @@
-# Dev Workflow — Stellar dApp
+# Dev Workflow - Stellar dApp
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────────┐
-│  Host (your machine)                                      │
-│                                                            │
-│  VS Code ── virtiofs mount ──► Workspace                  │
-│  sbx ports --publish 3000:3000 (port forward)              │
-│  Brave/Chrome ──► localhost:3000                           │
-│  Freighter Wallet (browser extension)                      │
-└──────────────────┬───────────────────────────────────────┘
-                   │ sandbox boundary
-┌──────────────────▼───────────────────────────────────────┐
-│  stellar-dapp (microVM)                                    │
-│                                                            │
-│  pnpm dev ──► Next.js dev server                           │
-│               ▼ http://0.0.0.0:3000                        │
-│  stellar-dev/skills/ (Stellar reference)                    │
-│  open-design/skills/ (UI design reference)                  │
-│  verdaccio (local npm cache on :4873)                      │
-│                                                            │
-│  Rust / cargo ──► Soroban contract compilation             │
-│               ▼ wasm32-unknown-unknown target               │
-└──────────────────────────────────────────────────────────┘
+```text
+Host or development VM
+  VS Code / editor
+  Browser with Freighter wallet
+  Docker Compose
+    - medichain-verdaccio on http://127.0.0.1:4873
+    - npm-cache-only internal network for package installs
+    - package-uplink network for Verdaccio-only npmjs fetches
+  Workspace
+    - Next.js app in src/
+    - Soroban contracts in contracts/
+    - Stellar and design references
 ```
 
-## 1. Start the Sandbox and Dev Environment
+Verdaccio is now a repository-owned Docker Compose service. Package approval
+does not depend on an sbx-managed container or `sbx policy`; the lock state is
+controlled by which Verdaccio config file the container is running.
 
-### Step 1: Start the sandbox (host)
+## 1. Start Local Services
+
+Start Verdaccio in locked mode:
 
 ```bash
-sbx run stellar-dapp
+docker compose up -d verdaccio
 ```
 
-Other sandbox commands:
+Check status:
 
 ```bash
-sbx stop stellar-dapp    # pause (VM state preserved)
-sbx rm stellar-dapp      # destroy (workspace files on host untouched)
-sbx reset                # destroy everything including cached images
+docker compose ps verdaccio
+docker compose logs -f verdaccio
 ```
 
-### Step 2: Start the dev server (inside sandbox)
+Configure pnpm if needed. The repo `.npmrc` already points at Verdaccio:
+
+```bash
+pnpm config set registry http://localhost:4873
+```
+
+Install dependencies:
+
+```bash
+pnpm install --frozen-lockfile
+```
+
+If a clean machine has an empty Verdaccio cache, approve the existing lockfile
+dependencies first, run `./unlock-npmjs.sh`, run the install, then re-lock with
+`./lock-npmjs.sh`.
+
+## 2. Start the Dev Server
+
+For local Node development:
+
+```bash
+pnpm dev
+```
+
+Open `http://localhost:3000`.
+
+If the app runs inside a VM or remote container, bind to `0.0.0.0` and use that
+environment's normal port-forwarding command:
 
 ```bash
 pnpm dev --hostname 0.0.0.0
 ```
 
-### Step 3: Publish the port (host)
+For the Dockerized web runtime:
 
 ```bash
-sbx ports stellar-dapp --publish 3000:3000
+DOCKER_BUILDKIT=0 docker compose build web
+docker compose up -d web
 ```
 
-Check forwarded ports:
+Open `http://localhost:3001` by default. Override with `WEB_PORT=3000` if port
+3000 is free:
+
 ```bash
-sbx ports stellar-dapp
-sbx list
+WEB_PORT=3000 docker compose up -d web
 ```
 
-## 2. Stellar Wallet Setup
+The web image builds on the internal `medichain-npm-cache-only` network and
+installs dependencies from locked Verdaccio. Use the classic Docker builder for
+this build path because the default BuildKit builder does not attach to the
+custom internal network in this environment.
 
-The dApp connects to Stellar wallets through the Freighter browser
-extension or Stellar Wallets Kit (multi-wallet).
+## 3. Installing New Packages
 
-### Freighter (recommended for development)
+Default state: locked. `verdaccio-config.yaml` has no npmjs uplink, so
+Verdaccio serves only packages already present in its storage volume.
 
-1. Install [Freighter browser extension](https://freighter.app)
-2. Create or import a Testnet wallet
-3. Fund with Friendbot: `https://friendbot.stellar.org?addr=<YOUR_PUBLIC_KEY>`
+Approval flow:
 
-### Testing wallet connection
+1. Agent reports the exact package and reason.
+2. Human approves the package.
+3. Unlock Verdaccio:
 
-The dApp should provide a "Connect Wallet" button that:
-1. Checks if Freighter is installed (`isConnected()`)
-2. Requests permission (`setAllowed()`)
-3. Retrieves the public key (`getPublicKey()`)
-4. Verifies the network matches your config
-
-## 3. Development Cycle
-
-### Frontend (Next.js / React)
-
-1. Write components following patterns in `stellar-dev/skills/dapp/SKILL.md`
-2. Use `@stellar/stellar-sdk` for tx building and chain queries
-3. Sign transactions through the wallet (Freighter or Wallets Kit)
-4. Submit to Testnet RPC for Soroban txs, Horizon for classic txs
-
-### Soroban Contract (Rust)
-
-1. Create contract project: `cargo new --lib my-contract && cd my-contract`
-2. Add `soroban-sdk` dependency to `Cargo.toml`
-3. Write contract following patterns in `stellar-dev/skills/soroban/SKILL.md`
-4. Build: `cargo build --target wasm32-unknown-unknown --release`
-5. Test: `cargo test`
-
-### UI Design
-
-When building the dApp interface, reference `open-design/skills/`:
-
-| Task | Skill |
-|------|-------|
-| Landing page | `open-design/skills/saas-landing/SKILL.md` |
-| Dashboard | `open-design/skills/dashboard/SKILL.md` |
-| Pricing | `open-design/skills/pricing-page/SKILL.md` |
-| Design review | `open-design/skills/critique/SKILL.md` |
-| Animations | `open-design/skills/motion-frames/SKILL.md` |
-| Premium aesthetic | `open-design/skills/web-prototype-taste-soft/SKILL.md` |
-
-## 4. Transaction Workflow
-
-```
-User Action → Build Tx → Simulate (Soroban) → Sign (Wallet) → Submit → Confirm
+```bash
+./unlock-npmjs.sh
 ```
 
-1. **Build**: Create transaction with proper fee, timeout, and operations
-2. **Simulate** (Soroban only): Get resource estimates via `rpc.simulateTransaction()`
-3. **Sign**: User signs in Freighter / wallet extension
-4. **Submit**: Send signed XDR to RPC (Soroban) or Horizon (classic)
-5. **Confirm**: Poll for transaction status and display result
+4. Install through pnpm so the package is cached by Verdaccio:
 
-## 5. Installing New Packages
+```bash
+pnpm add <pkg>
+```
 
-The sandbox has **no internet access** to npmjs.org by default.
+5. Re-lock Verdaccio:
 
-1. Tell the agent which package you need
-2. Agent requests unlock from you
-3. You unlock npmjs: `./unlock-npmjs.sh`
-4. Agent installs via `pnpm add <pkg>` (goes through verdaccio)
-5. You re-lock npmjs: `./lock-npmjs.sh`
+```bash
+./lock-npmjs.sh
+```
+
+The scripts recreate only the Verdaccio container. The named Docker volume
+`verdaccio-storage` persists cached package tarballs and metadata.
+
+Any future dApp or wallet Docker container that runs package-manager commands
+should use the `*npm-cache-only` Compose anchor. That gives it
+`http://verdaccio:4873/` as the npm registry and puts it on an internal network
+where it cannot fetch npm packages directly from the web.
+
+Current cached build/runtime packages include the existing Next/Stellar
+lockfile dependencies, `@elenajs/core@1.0.0`, and the pinned build tool
+`pnpm@9.15.9`.
+
+See `docs/dependency-management.md` for the dedicated dependency approval
+reference.
+
+## 4. Stellar Wallet Setup
+
+The dApp connects to Stellar wallets through Freighter or Stellar Wallets Kit.
+
+Freighter development setup:
+
+1. Install the Freighter browser extension.
+2. Create or import a Testnet wallet.
+3. Fund with Friendbot: `https://friendbot.stellar.org?addr=<YOUR_PUBLIC_KEY>`.
+
+Wallet private keys stay in the browser extension. They should never enter the
+workspace, app source, environment variables, logs, or test fixtures.
+
+## 5. Development Cycle
+
+Frontend:
+
+1. Write components following patterns in `stellar-dev/skills/dapp/SKILL.md`.
+2. Use `@stellar/stellar-sdk` for transaction building and chain queries.
+3. Sign transactions through the wallet.
+4. Submit Soroban transactions to RPC and classic operations to Horizon.
+
+Soroban contracts:
+
+```bash
+cargo build --target wasm32-unknown-unknown --release
+cargo test
+```
+
+Transaction flow:
+
+```text
+User action -> build tx -> simulate Soroban tx -> sign -> submit -> confirm
+```
 
 ## 6. Security Notes
 
-- The dev server only listens on `0.0.0.0` inside the sandbox
-- `sbx ports` creates a per-process forward, not a global port open
-- Wallet private keys never touch the sandbox — signing happens in the browser extension
-- Testnet-only by default; mainnet requires explicit env var configuration
-- Network passphrase must always come from SDK constants, never hardcoded
-- Verdaccio is local-only, bound to `0.0.0.0:4873`
-- open-design and stellar-dev skills contain no executable code — pure markdown
+- Verdaccio binds to `127.0.0.1:4873` on the Docker host.
+- Locked mode has no npmjs uplink in Verdaccio config.
+- Do not bypass Verdaccio by changing `.npmrc` or installing directly from a URL.
+- Testnet is the default network; mainnet requires explicit env configuration.
+- Network passphrases must come from SDK constants, not hardcoded strings.
+- Clinical content and patient identity should remain encrypted off-chain.

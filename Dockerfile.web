@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1.7
+
+ARG NODE_IMAGE=web-dev-template:latest
+
+FROM ${NODE_IMAGE} AS base
+USER root
+WORKDIR /app
+
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV COREPACK_ENABLE_PROJECT_SPEC=0
+ARG NPM_CONFIG_REGISTRY=http://verdaccio:4873/
+ENV NPM_CONFIG_REGISTRY=${NPM_CONFIG_REGISTRY}
+ENV npm_config_registry=${NPM_CONFIG_REGISTRY}
+
+RUN npm install --global pnpm@9.15.9 --registry "${NPM_CONFIG_REGISTRY}"
+
+FROM base AS deps
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN pnpm install --frozen-lockfile --registry "${NPM_CONFIG_REGISTRY}"
+
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN pnpm build
+
+FROM ${NODE_IMAGE} AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+ENV NPM_CONFIG_REGISTRY=http://verdaccio:4873/
+ENV npm_config_registry=http://verdaccio:4873/
+
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+EXPOSE 3000
+CMD ["node", "server.js"]

@@ -61,13 +61,13 @@ export default function DoctorPortal() {
           </svg>
         </div>
         <h2 className="text-xl font-semibold text-gray-700 mb-2">
-          Doctor Portal
+          Portal del Doctor
         </h2>
         <p className="text-sm text-gray-500 mb-6">
-          Connect your wallet to access patient records.
+          Conecta tu billetera para acceder a los registros de pacientes.
         </p>
         <Link href="/" className="btn-secondary text-sm">
-          Back to Home
+          Volver al Inicio
         </Link>
       </div>
     );
@@ -76,9 +76,9 @@ export default function DoctorPortal() {
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Doctor Portal</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Portal del Doctor</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Signed in as:{" "}
+          Conectado como:{" "}
           <span className="font-mono text-gray-700">
             {shortAddress(wallet.publicKey!)}
           </span>
@@ -87,7 +87,7 @@ export default function DoctorPortal() {
 
       <div className="card">
         <h2 className="text-lg font-semibold text-gray-800 mb-3">
-          Look Up Patient
+          Buscar Paciente
         </h2>
         <div className="flex gap-2">
           <input
@@ -99,7 +99,7 @@ export default function DoctorPortal() {
               setIsAuthorized(false);
               setRecords([]);
             }}
-            placeholder="Patient Stellar address..."
+            placeholder="Dirección Stellar del paciente..."
             className="input flex-1 text-sm font-mono"
           />
           <button
@@ -107,15 +107,15 @@ export default function DoctorPortal() {
             disabled={checking || !patientAddress.trim()}
             className="btn-primary text-sm"
           >
-            {checking ? "Checking..." : "Look Up"}
+            {checking ? "Verificando..." : "Buscar"}
           </button>
         </div>
 
         {checked && !isAuthorized && (
           <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-sm text-amber-800">
-              You are not authorized to view or append records for this
-              patient. Ask the patient to authorize your address.
+              No estás autorizado para ver o añadir registros de este
+              paciente. Pide al paciente que autorice tu dirección.
             </p>
           </div>
         )}
@@ -130,11 +130,11 @@ export default function DoctorPortal() {
 
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-gray-800">
-              Patient Records ({records.length})
+              Registros del Paciente ({records.length})
             </h2>
             {records.length === 0 ? (
               <div className="card text-center py-12">
-                <p className="text-gray-400">No records yet for this patient.</p>
+                <p className="text-gray-400">Aún no hay registros para este paciente.</p>
               </div>
             ) : (
               <div className="space-y-3">

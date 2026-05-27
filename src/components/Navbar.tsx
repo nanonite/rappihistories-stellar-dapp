@@ -25,7 +25,7 @@ export function Navbar() {
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              My Records
+              Mis Registros
             </Link>
             <Link
               href="/doctor"
@@ -35,7 +35,7 @@ export function Navbar() {
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              Doctor Portal
+              Portal del Doctor
             </Link>
           </div>
         </div>
@@ -47,18 +47,18 @@ export function Navbar() {
                 {shortAddress(wallet.publicKey!)}
               </span>
               <button onClick={disconnect} className="text-xs text-gray-500 hover:text-red-600">
-                Disconnect
+                Desconectar
               </button>
             </div>
           ) : (
             <button
               onClick={() => {
-                const pk = prompt("Enter Stellar public key for demo:");
+                const pk = prompt("Ingresa la clave pública Stellar para demo:");
                 if (pk) connect(pk);
               }}
               className="btn-primary text-sm"
             >
-              Connect Wallet
+              Conectar Billetera
             </button>
           )}
         </div>

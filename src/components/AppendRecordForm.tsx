@@ -37,13 +37,13 @@ export function AppendRecordForm({
   return (
     <form onSubmit={handleSubmit} className="card">
       <h2 className="text-lg font-semibold text-gray-800 mb-4">
-        Append Medical Record
+        Añadir Registro Médico
       </h2>
 
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">
-            Record Type
+            Tipo de Registro
           </label>
           <select
             value={recordType}
@@ -61,7 +61,7 @@ export function AppendRecordForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">
-            Data Hash (auto-generated if empty)
+            Hash de Datos (autogenerado si está vacío)
           </label>
           <input
             type="text"
@@ -75,13 +75,13 @@ export function AppendRecordForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">
-            Clinical Notes
+            Notas Clínicas
           </label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={4}
-            placeholder="Enter clinical observations, diagnosis, treatment plan..."
+            placeholder="Ingresa observaciones clínicas, diagnóstico, plan de tratamiento..."
             className="input text-sm resize-none"
             disabled={disabled}
           />
@@ -92,7 +92,7 @@ export function AppendRecordForm({
           disabled={disabled || !notes.trim()}
           className="btn-primary w-full"
         >
-          Sign & Append to Chain
+          Firmar y Añadir a la Cadena
         </button>
       </div>
     </form>

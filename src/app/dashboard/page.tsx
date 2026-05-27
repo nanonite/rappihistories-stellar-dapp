@@ -40,13 +40,13 @@ export default function PatientDashboard() {
           </svg>
         </div>
         <h2 className="text-xl font-semibold text-gray-700 mb-2">
-          Connect your wallet
+          Conecta tu billetera
         </h2>
         <p className="text-sm text-gray-500 mb-6">
-          Use the Connect button in the navbar to view your medical records.
+          Usa el botón Conectar en la barra de navegación para ver tus registros médicos.
         </p>
         <Link href="/" className="btn-secondary text-sm">
-          Back to Home
+          Volver al Inicio
         </Link>
       </div>
     );
@@ -63,9 +63,9 @@ export default function PatientDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Medical Records</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Mis Registros Médicos</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Patient:{" "}
+          Paciente:{" "}
           <span className="font-mono text-gray-700">
             {shortAddress(wallet.publicKey!)}
           </span>
@@ -75,13 +75,13 @@ export default function PatientDashboard() {
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-lg font-semibold text-gray-800">
-            Records ({records.length})
+            Registros ({records.length})
           </h2>
           {records.length === 0 ? (
             <div className="card text-center py-12">
-              <p className="text-gray-400">No medical records found.</p>
+              <p className="text-gray-400">No se encontraron registros médicos.</p>
               <p className="text-sm text-gray-400 mt-1">
-                Your records will appear here once a doctor adds them.
+                Tus registros aparecerán aquí cuando un doctor los añada.
               </p>
             </div>
           ) : (

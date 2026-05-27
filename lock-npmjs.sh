@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Usage: ./lock-npmjs.sh
-# Re-locks npmjs.org — packages must be cached in verdaccio.
+# Re-locks Verdaccio by restarting it without an npmjs uplink.
 set -eu
-echo "Re-locking npmjs.org..."
-sbx policy rm network "registry.npmjs.org:443" 2>/dev/null || echo "Policy already removed."
-echo "LOCKED. Only verdaccio-cached packages available."
+echo "Switching Verdaccio to LOCKED mode..."
+VERDACCIO_CONFIG=./verdaccio-config.yaml docker compose up -d --force-recreate verdaccio
+echo "LOCKED. Verdaccio will serve cached packages only."

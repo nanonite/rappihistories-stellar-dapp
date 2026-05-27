@@ -1,5 +1,18 @@
 # Development Environment
 
+## Project Orientation
+
+At Codex session start, read `ORIENTATION.md` from the workspace root and use
+it as required project orientation context. It captures the intended agent role
+for this workspace: a direct, proactive coding agent for Roger's Stellar
+healthcare MVP that documents important design decisions, explains major
+blockchain/product architecture choices, and asks before committing to major
+ambiguous choices.
+
+Keep `ORIENTATION_BRAINSTORM.md` as the source brainstorm record. The compiled
+orientation in `ORIENTATION.md` is the active version future sessions should
+load.
+
 You are running inside a Docker sbx sandbox (microVM). The host provides
 network filtering via `sbx policy`. You have full sudo access inside this
 VM but cannot reach the host filesystem outside the workspace.
@@ -29,7 +42,7 @@ code --disable-workspace-trust /path/to/stellar-dapp-workspace
 - pnpm (via corepack)
 - Node.js 22+
 - Rust (rustup + wasm32-unknown-unknown target) — for Soroban contracts
-- Docker (private daemon inside this sandbox — not the host's)
+- Docker / Docker Compose for repo-owned local services such as Verdaccio
 - Git
 
 ## Primary Dependencies
@@ -110,15 +123,18 @@ These are read-only design assets. Read the relevant skill when designing UI.
 
 ## Environment Setup
 
-Run these steps on first run or after a clean sandbox is created:
+Run these steps on first run or after a clean environment is created:
 
-1. Verdaccio auto-starts on sandbox boot via `/etc/sandbox-persistent.sh`.
-   If it's not running, start it manually:
+1. Start the repo-owned Verdaccio container:
    ```
-   source ~/.bashrc && nohup verdaccio --config /path/to/workspace/verdaccio-config.yaml > /tmp/verdaccio.log 2>&1 &
+   docker compose up -d verdaccio
    ```
 
-2. Configure pnpm to use the local registry:
+   The default `verdaccio-config.yaml` is locked and has no npmjs uplink.
+   Use `./unlock-npmjs.sh` only after a package is approved, then run
+   `./lock-npmjs.sh` when the package has been cached.
+
+2. Configure pnpm to use the local registry if `.npmrc` is not already active:
    ```
    pnpm config set registry http://localhost:4873
    ```
@@ -130,30 +146,41 @@ Run these steps on first run or after a clean sandbox is created:
 
 4. The environment is ready. Start the dev server or run tests as needed.
 
-## Package Lock Protocol
+## Package Approval Protocol
 
-The host enforces a network policy via `sbx policy`. npmjs.org
-(registry.npmjs.org) is DENIED by default in the LOCKED state.
-Verdaccio cannot fetch new packages from npmjs when locked.
+Verdaccio runs as a Docker Compose service from this repository. It is locked
+by default because `verdaccio-config.yaml` has no npmjs uplink. The unlocked
+configuration is `verdaccio-config.unlocked.yaml` and should be used only
+while installing an approved package.
+
+Future dApp, wallet, or other Node containers that run package-manager commands
+should use the `*npm-cache-only` Compose anchor. They must reach packages
+through `http://verdaccio:4873/`, not npmjs directly.
+
+See `docs/dependency-management.md` for the current operational details.
 
 WHEN YOU NEED A NEW NPM PACKAGE:
 
 1. Report to the human clearly:
    "I need package `<name>@<version>` for `<reason>`."
 
-2. WAIT for the human to unlock npmjs. They will inspect the package
-   before approving. Do not proceed until they confirm.
+2. WAIT for the human to approve the package. They may inspect it before
+   unlocking Verdaccio. Do not proceed until they confirm.
 
-3. After the human confirms unlock: run `pnpm add <name>`.
-   This goes through verdaccio, which fetches and caches the package.
+3. After approval, unlock Verdaccio and install the package:
+   ```
+   ./unlock-npmjs.sh
+   pnpm add <name>
+   ./lock-npmjs.sh
+   ```
 
-4. The human will re-lock npmjs after installation. Continue working.
+   This goes through Verdaccio, which fetches and caches the package.
 
 DO NOT:
-- Attempt to change npm registry config to bypass verdaccio
+- Attempt to change npm registry config to bypass Verdaccio
 - Use curl, wget, or any other tool to download packages directly
-  (blocked at the network layer regardless)
-- Edit verdaccio config or docker-compose.yml without human instruction
+  instead of using the package manager through Verdaccio
+- Edit Verdaccio config or `docker-compose.yml` without human instruction
 
 ## Stellar Network Configuration
 
@@ -177,14 +204,23 @@ NEXT_PUBLIC_STELLAR_MAINNET_RPC_URL=
 
 ## Starting the Dev Server
 
-Start the project's dev server and bind to `0.0.0.0` so the host can
-reach it via `sbx ports`:
+Start the project's dev server:
 ```
-pnpm dev --hostname 0.0.0.0
+pnpm dev
 ```
 
-The human runs `sbx ports stellar-dapp --publish 3000` to expose it to
-their browser at `http://localhost:3000`.
+If the dev server runs inside a VM or remote container, bind to `0.0.0.0`
+and publish the port using that environment's port-forwarding mechanism.
+
+The Dockerized web runtime is built with `Dockerfile.web` and the repo-owned
+Compose service:
+```
+DOCKER_BUILDKIT=0 docker compose build web
+docker compose up -d web
+```
+
+It serves on `http://localhost:3001` by default. Set `WEB_PORT=3000` if port
+3000 is free.
 
 ## Testing
 
@@ -216,10 +252,8 @@ cargo test
 
 ## What Is Blocked (by host proxy)
 
-- Direct access to npmjs.org when LOCKED
-- Access to any domain not in the sbx policy allowlist
+- Direct package installation from npmjs.org outside Verdaccio
 - Access to host filesystem outside the workspace
-- Access to host Docker daemon or other host processes
 
 ## Quick Reference: Stellar Packages
 

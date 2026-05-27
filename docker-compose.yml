@@ -1,16 +1,95 @@
-# Runs INSIDE the sbx sandbox's private Docker Engine.
-# The opencode agent starts this when it needs verdaccio.
+# Repository-owned Verdaccio cache for controlled npm installs.
+#
+# Default mode is locked: ./verdaccio-config.yaml has no npmjs uplink.
+# To approve a new package temporarily, run ./unlock-npmjs.sh. Re-lock with
+# ./lock-npmjs.sh after the package has been cached.
+
+x-npm-cache-only: &npm-cache-only
+  environment:
+    NPM_CONFIG_REGISTRY: http://verdaccio:4873/
+    npm_config_registry: http://verdaccio:4873/
+    YARN_NPM_REGISTRY_SERVER: http://verdaccio:4873/
+  networks:
+    - npm-cache-only
+  depends_on:
+    verdaccio:
+      condition: service_healthy
+  extra_hosts:
+    - "registry.npmjs.org=0.0.0.0"
+    - "registry.npmjs.org=::"
 
 services:
   verdaccio:
     image: verdaccio/verdaccio:6
-    container_name: verdaccio-sentry
+    container_name: medichain-verdaccio
     volumes:
-      - ./verdaccio-config.yaml:/verdaccio/conf/config.yaml:ro
+      - ${VERDACCIO_CONFIG:-./verdaccio-config.yaml}:/verdaccio/conf/config.yaml:ro
       - verdaccio-storage:/verdaccio/storage
     ports:
-      - "4873:4873"
+      - "127.0.0.1:4873:4873"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:4873/-/ping').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - npm-cache-only
+      - package-uplink
     restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:-web-dev-template:latest}
+        NPM_CONFIG_REGISTRY: http://verdaccio:4873/
+      network: medichain-npm-cache-only
+      extra_hosts:
+        - "registry.npmjs.org=0.0.0.0"
+        - "registry.npmjs.org=::"
+    image: medichain-web:latest
+    container_name: medichain-web
+    environment:
+      NPM_CONFIG_REGISTRY: http://verdaccio:4873/
+      npm_config_registry: http://verdaccio:4873/
+      NEXT_PUBLIC_STELLAR_NETWORK: ${NEXT_PUBLIC_STELLAR_NETWORK:-testnet}
+      NEXT_PUBLIC_STELLAR_MAINNET_RPC_URL: ${NEXT_PUBLIC_STELLAR_MAINNET_RPC_URL:-}
+    extra_hosts:
+      - "registry.npmjs.org=0.0.0.0"
+      - "registry.npmjs.org=::"
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3001}:3000"
+    networks:
+      - app-runtime
+      - npm-cache-only
+    depends_on:
+      verdaccio:
+        condition: service_healthy
+
+  # Template for future dApp containers that need to run pnpm/npm/yarn.
+  # Keep package-installing app containers on npm-cache-only so they can reach
+  # Verdaccio but cannot reach registry.npmjs.org or the wider web directly.
+  #
+  # Example:
+  # dapp:
+  #   <<: *npm-cache-only
+  #   build:
+  #     context: .
+  #   command: pnpm install --frozen-lockfile
+
+networks:
+  npm-cache-only:
+    name: medichain-npm-cache-only
+    internal: true
+  package-uplink:
+    name: medichain-package-uplink
+  app-runtime:
+    name: medichain-app-runtime
 
 volumes:
   verdaccio-storage:

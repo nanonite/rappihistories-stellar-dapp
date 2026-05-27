@@ -1,0 +1,10 @@
+node_modules/
+.pnpm-store/
+.next/
+out/
+target/
+.git/
+.sbx/
+.od/
+*.tsbuildinfo
+.env.local

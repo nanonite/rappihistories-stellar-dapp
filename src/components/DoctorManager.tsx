@@ -28,7 +28,7 @@ export function DoctorManager({
   return (
     <div className="card">
       <h2 className="text-lg font-semibold text-gray-800 mb-4">
-        Authorized Doctors
+        Doctores Autorizados
       </h2>
 
       <div className="flex gap-2 mb-4">
@@ -41,12 +41,12 @@ export function DoctorManager({
           disabled={disabled}
         />
         <button onClick={handleAdd} disabled={disabled || !newDoctor.trim()} className="btn-primary text-sm">
-          Authorize
+          Autorizar
         </button>
       </div>
 
       {doctors.length === 0 ? (
-        <p className="text-sm text-gray-400 py-2">No authorized doctors yet.</p>
+        <p className="text-sm text-gray-400 py-2">Aún no hay doctores autorizados.</p>
       ) : (
         <ul className="divide-y divide-gray-100">
           {doctors.map((doc) => (
@@ -67,7 +67,7 @@ export function DoctorManager({
                 disabled={disabled}
                 className="text-xs text-red-500 hover:text-red-700 font-medium disabled:opacity-50"
               >
-                Revoke
+                Revocar
               </button>
             </li>
           ))}

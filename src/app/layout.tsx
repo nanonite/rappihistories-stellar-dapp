@@ -3,9 +3,9 @@ import { Navbar } from "@/components/Navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MediChain — Medical Records on Stellar",
+  title: "MediChain — Registros Médicos en Stellar",
   description:
-    "Immutable, append-only medical records secured on the Stellar blockchain. Patients control access; authorized doctors append records.",
+    "Registros médicos inmutables y de solo añadir asegurados en la blockchain Stellar. Los pacientes controlan el acceso; los doctores autorizados añaden registros.",
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body>
         <Navbar />
         <main className="max-w-6xl mx-auto px-4 py-8">{children}</main>

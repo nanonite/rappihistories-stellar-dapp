@@ -7,13 +7,19 @@ web:
 listen:
   - 0.0.0.0:4873
 
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org
+
 packages:
   '@*/*':
     access: $all
     publish: nobody
+    proxy: npmjs
   '**':
     access: $all
     publish: nobody
+    proxy: npmjs
 
 server:
   keepAliveTimeout: 60
