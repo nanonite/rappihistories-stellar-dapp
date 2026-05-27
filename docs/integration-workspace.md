@@ -134,6 +134,20 @@ Do not convert documentation, local Stellar/design skill references, or root
 orchestration files into submodules. They remain integration-owned unless a
 future repo split gives them a concrete operational owner.
 
+## Contract Vocabulary
+
+The contract task prefixes are shorthand for the Soroban contract areas:
+
+| Prefix | Contract area | Directory | Meaning |
+| --- | --- | --- | --- |
+| `IDB` | Identity | `components/contracts/identity` | Roles, credential issuers, credential issue/revoke/verify, and onboarding trust roots |
+| `BKR` | Access broker | `components/contracts/access-broker` | Record commitments, consent grants, access requests, audit events, revocation, break-glass, veto, and offline audit |
+| `RX` | Prescription | `components/contracts/prescription` | Prescription state machine, reservation bridge, patient co-signed dispense, and receipt writeback |
+| `SC` | Supply chain | `components/contracts/supplychain` | Batch registration, unit serialization, custody transfer, cold-chain oracle, quarantine, reservation, and dispense hooks |
+
+The `incentive` contract exists in the workspace but is future/deferred for the
+MVP unless a task explicitly brings it into scope.
+
 ## Runner and Toolchain Contract
 
 Forgejo runner infrastructure should provide a clean scheduling and Docker
