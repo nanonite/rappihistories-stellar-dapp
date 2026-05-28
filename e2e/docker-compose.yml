@@ -254,6 +254,26 @@ services:
       api-indexer:
         condition: service_healthy
 
+  breakglass-contract-flow:
+    image: medichain-contract-runner:latest
+    profiles: ["test"]
+    entrypoint: ["bash", "/workspace/scripts/e2e-breakglass-contract-flow.sh"]
+    environment:
+      STELLAR_RPC_URL: http://stellar-local:8000/soroban/rpc
+      CONTRACT_IDS_FILE: /shared/contract-ids.json
+      SEED_IDENTITIES_FILE: /shared/seed-identities.json
+      BREAKGLASS_SCENARIOS_FILE: /shared/breakglass-scenarios.json
+    volumes:
+      - ..:/workspace:ro
+      - contract-shared:/shared
+    networks:
+      - app-runtime
+    depends_on:
+      api-indexer:
+        condition: service_healthy
+      tier3-contract-flow:
+        condition: service_completed_successfully
+
   e2e-runner:
     image: docker.io/library/node:22-bookworm
     profiles: ["test"]
@@ -266,6 +286,7 @@ services:
       CONTRACT_IDS_FILE: /shared/contract-ids.json
       SEED_IDENTITIES_FILE: /shared/seed-identities.json
       TIER3_SCENARIOS_FILE: /shared/tier3-scenarios.json
+      BREAKGLASS_SCENARIOS_FILE: /shared/breakglass-scenarios.json
     volumes:
       - .:/workspace/e2e:ro
       - contract-shared:/shared:ro
@@ -277,6 +298,8 @@ services:
       kms-gate:
         condition: service_healthy
       tier3-contract-flow:
+        condition: service_completed_successfully
+      breakglass-contract-flow:
         condition: service_completed_successfully
       stellar-local:
         condition: service_started

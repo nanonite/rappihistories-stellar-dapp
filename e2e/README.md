@@ -27,6 +27,9 @@ Current coverage:
 - api-indexer read-model ingestion from access-broker contract events
 - Tier 3 happy path key release through api-indexer-backed KMS grant lookup
 - Tier 3 revoked and expired grant denials through the live KMS predicate
+- break-glass veto denial through signed Stellar contract state and KMS `VETOED`
+- break-glass no-veto release after `revealAt`
+- tokenless fallback release after an indexed emergency cosigner grant
 
 Browser automation should sit above this layer as UX confirmation only. Product
 correctness should be proven here through service APIs and Stellar helpers.
