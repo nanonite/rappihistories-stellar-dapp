@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Security
+- E2E-5 — KMS predicate security conformance test (#55)
 - E2E-3 — Break-glass and veto conformance tests (#53)
 
 ### Added

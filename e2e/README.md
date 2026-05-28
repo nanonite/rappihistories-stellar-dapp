@@ -34,6 +34,9 @@ Current coverage:
   supplychain reservation, dispense, and dispensation receipt writeback
 - prescription negative paths: pharmacy-only dispense denial and quarantined
   batch reservation denial
+- KMS predicate conformance table against live local services, including
+  no-grant, wrong-requester, revoked, vetoed, before-reveal, expired, allowed,
+  revoked-and-vetoed ordering, and simulated no-send grant defense
 
 Browser automation should sit above this layer as UX confirmation only. Product
 correctness should be proven here through service APIs and Stellar helpers.
