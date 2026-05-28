@@ -928,6 +928,54 @@ supplychain contract marks unit dispensed
 access broker receives dispensation receipt commitment
 ```
 
+### Clinician Appends to Patient History (Option A)
+
+The patient history is modelled as an append-only event stream. Each
+`Record` entry carries explicit `subject` (patient) and `author` (writer)
+fields and is immutable once written. To append on a patient's behalf a
+clinician needs a live `GrantType::Write` issued by the patient, scoped
+by category and `expires_at`. Reads of the new entry still flow through
+the normal grant path — `append_record` releases no ciphertext.
+
+See chainlink #78 (APPEND-1) for the umbrella and #79 (BKR-7) for the
+contract changes.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor P as Patient
+  actor C as Clinician
+  participant W as Web
+  participant AB as access-broker
+  participant S as off-chain storage
+  participant IDX as api-indexer
+  P->>W: grant write to clinician (category, ttl)
+  W->>AB: create_write_grant(subject, grantee, category, expires_at)
+  AB-->>IDX: WriteGrantCreated event
+  IDX-->>P: write grant visible in dashboard
+  C->>W: compose note (synthetic ciphertext local to client)
+  W->>S: PUT ciphertext → locator
+  W->>AB: append_record(author=C, subject=P, write_grant_id, record_id, tier, category, locator, commitment)
+  Note right of AB: validates Write grant<br/>live, not revoked,<br/>matches subject + category
+  AB-->>IDX: RecordAppended event (subject, author, ...)
+  IDX-->>P: new entry appears in history stream
+  P->>W: revoke write grant
+  W->>AB: revoke_write_grant(grant_id)
+  AB-->>IDX: WriteGrantRevoked event
+  Note over C,AB: subsequent append_record by C is rejected<br/>existing appended entries remain immutable
+```
+
+```text
+patient issues a write grant scoped to a category and expiry
+clinician composes a note, encrypts it client-side, uploads ciphertext
+clinician calls append_record under the live write grant
+access broker validates the grant and stores an immutable record entry
+api-indexer projects the appended entry into the patient history stream
+patient sees the new entry attributed to the clinician
+patient revokes the write grant; future appends by the clinician fail
+prior entries authored under the grant remain readable via normal grants
+```
+
 ## State, Rent, and Gas Strategy
 
 - On-chain state should be a function of active grants and prescriptions, not total clinical history.
