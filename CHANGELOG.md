@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 ### Changed
+- E2E-9 — Tier 3 append placeholder and pharmacy dispense story (#86)
 - WEB-8 — Translate web app pages to Spanish (#87)
 - WEB-9 — Expand doctor portal access request workflow (#88)
 - E2E-7 — Manual browser conformance demo command and UI (#74)
