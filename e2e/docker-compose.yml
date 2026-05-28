@@ -92,6 +92,7 @@ services:
       DATABASE_URL: postgres://medichain:medichain@postgres:5432/medichain
       STELLAR_RPC_URL: http://stellar-local:8000
       INDEXER_CONTRACT_IDS_FILE: /shared/contract-ids.json
+      SEED_IDENTITIES_FILE: /shared/seed-identities.json
       EVENT_POLL_INTERVAL_MS: ${EVENT_POLL_INTERVAL_MS:-5000}
       API_INDEXER_PORT: 8788
     extra_hosts:
@@ -130,9 +131,12 @@ services:
       NPM_CONFIG_REGISTRY: http://verdaccio:4873/
       npm_config_registry: http://verdaccio:4873/
       STELLAR_RPC_URL: http://stellar-local:8000
+      KMS_CONTRACT_IDS_FILE: /shared/contract-ids.json
     extra_hosts:
       - "registry.npmjs.org=0.0.0.0"
       - "registry.npmjs.org=::"
+    volumes:
+      - contract-shared:/shared:ro
     networks:
       - app-runtime
       - npm-cache-only
@@ -206,6 +210,7 @@ services:
     environment:
       STELLAR_RPC_URL: http://stellar-local:8000
       CONTRACT_IDS_FILE: /shared/contract-ids.json
+      SEED_IDENTITIES_FILE: /shared/seed-identities.json
     extra_hosts:
       - "registry.npmjs.org=0.0.0.0"
       - "registry.npmjs.org=::"
