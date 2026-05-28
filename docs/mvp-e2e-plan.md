@@ -113,12 +113,17 @@ indexer-backed reader and lock the route payloads with tests.
 
 After the local runtime starts reliably:
 
-1. `E2E-1` / Chainlink `#51`: add Playwright and mock wallet infrastructure.
-   Configure tests against `http://web:3000`, inject the mock wallet adapter,
-   load seed data, and add Stellar helpers for transaction confirmation and
-   grant-state reads.
+1. `E2E-1` / Chainlink `#51`: add API-first functional e2e infrastructure.
+   Tests should drive service APIs and Stellar helpers directly for setup,
+   actions, and assertions. This keeps the product spine deterministic and
+   avoids making functional correctness depend on browser automation.
 
-2. `E2E-2` / Chainlink `#52`: implement the Tier 3 happy path, revocation,
+2. Add Playwright and mock wallet infrastructure only for UX confirmation.
+   Configure browser tests against `http://web:3000`, inject the mock wallet
+   adapter, and verify that the user-facing screens reflect the already-proven
+   API flow.
+
+3. `E2E-2` / Chainlink `#52`: implement the Tier 3 happy path, revocation,
    and expiry checks.
 
 This phase is the MVP spine. Once it passes locally, the system has crossed from

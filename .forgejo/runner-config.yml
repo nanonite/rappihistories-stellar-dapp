@@ -1,6 +1,0 @@
-container:
-  # In Docker-in-Docker, host networking means the job container shares the
-  # forgejo-dind container network. Keep forgejo-dind attached to both the
-  # forgejo-ci and medichain-npm-cache-only networks so jobs can reach Forgejo
-  # and the Verdaccio registry URL exported by the workflow.
-  network: host
