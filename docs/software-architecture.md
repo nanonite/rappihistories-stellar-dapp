@@ -928,6 +928,27 @@ supplychain contract marks unit dispensed
 access broker receives dispensation receipt commitment
 ```
 
+The current MVP projects this story through api-indexer read models instead of
+requiring the browser to replay contract state. Prescription events carry only
+non-secret identifiers: patient and clinician refs, prescription id, source
+Tier 3 record id, prescription commitment, pharmacy ref, inventory unit id,
+reservation ref, and receipt record id. Supply-chain events project unit
+registration, reservation, dispense, and quarantine evidence. The browser demo
+therefore proves the ordered story by reading:
+
+- `GET /v1/prescriptions/:id` for issue, selected pharmacy, reservation, final
+  `dispensed` status, and receipt record linkage.
+- `GET /v1/inventory-units/:id` for batch, reservation ref, pharmacy, linked
+  prescription, and final unit status.
+- `GET /v1/records?patient=:patient` and
+  `GET /v1/patients/:patient/history` for the Tier 3 source placeholder and
+  dispensation receipt writeback.
+
+Clinical content and medicine directions remain off-chain. The on-chain
+prescription commitment and receipt commitment are evidence handles only; the
+manual e2e story uses synthetic medicine intent text solely as local scenario
+metadata.
+
 ### Clinician Appends to Patient History (Option A)
 
 The patient history is modelled as an append-only event stream. Each
@@ -946,6 +967,13 @@ through `GET /write-grants/:id`. These read models expose only metadata:
 subject, author, tier, category, locator, commitment, timestamps, and
 grant lineage. Human-readable clinical note text remains encrypted
 off-chain.
+
+The append browser story uses this same projection contract: it first shows the
+recommendation placeholder in patient history, then proves the clinician has an
+active Write grant, then verifies the appended Tier 3 entry by `subject`,
+`author`, `write_grant_id`, category, locator, and commitment. KMS release
+continues to require a normal read grant; Write grants only authorize appending
+metadata and never release ciphertext keys.
 
 See chainlink #78 (APPEND-1) for the umbrella and #79 (BKR-7) for the
 contract changes.

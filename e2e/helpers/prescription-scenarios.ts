@@ -2,8 +2,15 @@ import { readFile } from "node:fs/promises";
 
 export interface PrescriptionHappyScenario {
   readonly patientPseudonym: string;
+  readonly clinicianPublicKey: string;
+  readonly pharmacyPublicKey: string;
   readonly prescriptionId: string;
+  readonly diagnosisRecordId: string;
+  readonly prescriptionCommitment: string;
   readonly unitId: string;
+  readonly batchId: string;
+  readonly reservationRef: string;
+  readonly medicineIntent: string;
   readonly receiptRecordId: string;
   readonly receiptLocator: string;
   readonly receiptCommitment: string;
@@ -47,8 +54,15 @@ function readHappy(value: unknown, name: string): PrescriptionHappyScenario {
 
   return {
     patientPseudonym: requireString(scenario.patientPseudonym, name),
+    clinicianPublicKey: requireString(scenario.clinicianPublicKey, name),
+    pharmacyPublicKey: requireString(scenario.pharmacyPublicKey, name),
     prescriptionId: requireHex(scenario.prescriptionId, name),
+    diagnosisRecordId: requireHex(scenario.diagnosisRecordId, name),
+    prescriptionCommitment: requireHex(scenario.prescriptionCommitment, name),
     unitId: requireHex(scenario.unitId, name),
+    batchId: requireHex(scenario.batchId, name),
+    reservationRef: requireHex(scenario.reservationRef, name),
+    medicineIntent: requireString(scenario.medicineIntent, name),
     receiptRecordId: requireHex(scenario.receiptRecordId, name),
     receiptLocator: requireString(scenario.receiptLocator, name),
     receiptCommitment: requireHex(scenario.receiptCommitment, name),

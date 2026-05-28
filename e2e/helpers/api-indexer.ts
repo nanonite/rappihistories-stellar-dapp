@@ -69,6 +69,45 @@ export interface WriteGrantsResponse {
   readonly writeGrants: readonly WriteGrantDetails[];
 }
 
+export interface PrescriptionDetails {
+  readonly prescriptionId: string;
+  readonly recordId: string | null;
+  readonly patientPseudonym: string;
+  readonly prescriberRef: string | null;
+  readonly pharmacyRef: string | null;
+  readonly unitId: string | null;
+  readonly reservationRef: string | null;
+  readonly receiptRecordId: string | null;
+  readonly commitment: string | null;
+  readonly status: string;
+  readonly ledgerSequence: string;
+  readonly issuedAt: string | null;
+  readonly updatedAt: string;
+  readonly indexedAt: string;
+}
+
+export interface PrescriptionDetailsResponse {
+  readonly prescription: PrescriptionDetails;
+}
+
+export interface InventoryUnitDetails {
+  readonly inventoryUnitId: string;
+  readonly prescriptionId: string | null;
+  readonly batchId: string | null;
+  readonly reservationRef: string | null;
+  readonly lotId: string | null;
+  readonly sku: string | null;
+  readonly pharmacyRef: string | null;
+  readonly status: string;
+  readonly ledgerSequence: string;
+  readonly updatedAt: string;
+  readonly indexedAt: string;
+}
+
+export interface InventoryUnitDetailsResponse {
+  readonly inventoryUnit: InventoryUnitDetails;
+}
+
 export interface AuditResponse {
   readonly audit: readonly unknown[];
 }
@@ -220,6 +259,26 @@ export async function readIndexerState(
   apiIndexerUrl: string,
 ): Promise<IndexerStateResponse> {
   return getJson<IndexerStateResponse>(apiIndexerUrl, "/v1/indexer/state");
+}
+
+export async function readPrescriptionById(
+  apiIndexerUrl: string,
+  prescriptionId: string,
+): Promise<PrescriptionDetailsResponse> {
+  return getJson<PrescriptionDetailsResponse>(
+    apiIndexerUrl,
+    `/v1/prescriptions/${encodeURIComponent(prescriptionId)}`,
+  );
+}
+
+export async function readInventoryUnitById(
+  apiIndexerUrl: string,
+  unitId: string,
+): Promise<InventoryUnitDetailsResponse> {
+  return getJson<InventoryUnitDetailsResponse>(
+    apiIndexerUrl,
+    `/v1/inventory-units/${encodeURIComponent(unitId)}`,
+  );
 }
 
 export async function createTier3RecordFixture(

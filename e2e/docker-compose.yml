@@ -103,6 +103,7 @@ services:
       STELLAR_RPC_URL: http://stellar-local:8000/soroban/rpc
       INDEXER_CONTRACT_IDS_FILE: /shared/contract-ids.json
       SEED_IDENTITIES_FILE: /shared/seed-identities.json
+      E2E_FIXTURE_API: "1"
       EVENT_POLL_INTERVAL_MS: ${EVENT_POLL_INTERVAL_MS:-1000}
       API_INDEXER_PORT: 8788
     extra_hosts:

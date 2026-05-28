@@ -115,7 +115,7 @@ create_happy_path() {
   local pharmacy_public="$8"
   local pharmacy_signer="$9"
   local prescription_id diagnosis_record_id prescription_commitment unit_id batch_id reservation_ref
-  local receipt_record_id receipt_locator receipt_locator_hex receipt_commitment plaintext
+  local receipt_record_id receipt_locator receipt_locator_hex receipt_commitment plaintext medicine_intent
 
   prescription_id="$(hash_for happy:prescription)"
   diagnosis_record_id="$(hash_for happy:diagnosis)"
@@ -126,7 +126,8 @@ create_happy_path() {
   receipt_record_id="$(hash_for happy:receipt-record)"
   receipt_locator="opaque://e2e/prescription/happy/receipt"
   receipt_locator_hex="$(to_hex "$receipt_locator")"
-  plaintext="{\"subject\":\"e2e-dispensation-receipt\",\"prescription\":\"$prescription_id\",\"patient\":\"$patient_public\"}"
+  medicine_intent="amoxicillin-500mg-e2e"
+  plaintext="{\"subject\":\"e2e-dispensation-receipt\",\"prescription\":\"$prescription_id\",\"patient\":\"$patient_public\",\"medicineIntent\":\"$medicine_intent\"}"
   receipt_commitment="$(sha256_hex "$plaintext")"
 
   stellar_invoke "$supplychain" "$pharmacy_signer" register_unit \
@@ -155,10 +156,17 @@ create_happy_path() {
 
   wait_for_record "$access_broker" "$patient_secret" "$receipt_record_id"
 
-  printf '{"patientPseudonym":"%s","prescriptionId":"%s","unitId":"%s","receiptRecordId":"%s","receiptLocator":"%s","receiptCommitment":"%s"}' \
+  printf '{"patientPseudonym":"%s","clinicianPublicKey":"%s","pharmacyPublicKey":"%s","prescriptionId":"%s","diagnosisRecordId":"%s","prescriptionCommitment":"%s","unitId":"%s","batchId":"%s","reservationRef":"%s","medicineIntent":"%s","receiptRecordId":"%s","receiptLocator":"%s","receiptCommitment":"%s"}' \
     "$patient_public" \
+    "$clinician_public" \
+    "$pharmacy_public" \
     "$prescription_id" \
+    "$diagnosis_record_id" \
+    "$prescription_commitment" \
     "$unit_id" \
+    "$batch_id" \
+    "$reservation_ref" \
+    "$medicine_intent" \
     "$receipt_record_id" \
     "$receipt_locator" \
     "$receipt_commitment"
