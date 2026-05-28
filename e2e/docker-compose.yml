@@ -60,16 +60,26 @@ services:
       npm_config_registry: http://verdaccio:4873/
       NEXT_PUBLIC_STELLAR_NETWORK: ${NEXT_PUBLIC_STELLAR_NETWORK:-testnet}
       NEXT_PUBLIC_STELLAR_MAINNET_RPC_URL: ${NEXT_PUBLIC_STELLAR_MAINNET_RPC_URL:-}
+      MANUAL_E2E_ENABLED: ${MANUAL_E2E_ENABLED:-1}
+      MANUAL_E2E_SHARED_DIR: /shared
+      API_INDEXER_URL: http://api-indexer:8788
+      KMS_GATE_URL: http://kms-gate:8790
     extra_hosts:
       - "registry.npmjs.org=0.0.0.0"
       - "registry.npmjs.org=::"
     ports:
       - "127.0.0.1:${WEB_PORT:-3001}:3000"
+    volumes:
+      - contract-shared:/shared:ro
     networks:
       - app-runtime
       - npm-cache-only
     depends_on:
       verdaccio:
+        condition: service_healthy
+      api-indexer:
+        condition: service_healthy
+      kms-gate:
         condition: service_healthy
 
   api-indexer:
