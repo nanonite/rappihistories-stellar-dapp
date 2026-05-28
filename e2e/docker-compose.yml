@@ -72,41 +72,151 @@ services:
       verdaccio:
         condition: service_healthy
 
-  forgejo-runner:
-    image: data.forgejo.org/forgejo/runner:12
-    container_name: forgejo-runner
-    profiles:
-      - ci
+  api-indexer:
+    build:
+      context: ..
+      dockerfile: components/api-indexer/Dockerfile
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:-docker.io/library/node:22-bookworm}
+        NPM_CONFIG_REGISTRY: http://verdaccio:4873/
+      network: medichain-npm-cache-only
+      extra_hosts:
+        - "registry.npmjs.org=0.0.0.0"
+        - "registry.npmjs.org=::"
+    image: medichain-api-indexer:latest
+    container_name: medichain-api-indexer
     environment:
-      DOCKER_HOST: tcp://forgejo-dind:2375
-      NPM_CONFIG_REGISTRY: http://medichain-verdaccio:4873/
-      npm_config_registry: http://medichain-verdaccio:4873/
-      YARN_NPM_REGISTRY_SERVER: http://medichain-verdaccio:4873/
-    command:
-      - /bin/forgejo-runner
-      - --config
-      - /etc/forgejo-runner/config.yml
-      - daemon
-      - --url
-      - ${FORGEJO_RUNNER_URL:-http://forgejo:3000/}
-      - --uuid
-      - ${FORGEJO_RUNNER_UUID:-38646461-3231-3539-3432-383533316265}
-      - --token-url
-      - file:///run/secrets/forgejo-runner-token
-      - --label
-      - ubuntu-latest:docker://docker.io/library/node:22-bookworm
-      - --label
-      - nix:docker://${FORGEJO_NIX_RUNNER_IMAGE:-docker.io/nixos/nix:latest}
+      NODE_ENV: ${NODE_ENV:-development}
+      NPM_CONFIG_REGISTRY: http://verdaccio:4873/
+      npm_config_registry: http://verdaccio:4873/
+      DATABASE_URL: postgres://medichain:medichain@postgres:5432/medichain
+      STELLAR_RPC_URL: http://stellar-local:8000
+      INDEXER_CONTRACT_IDS_FILE: /shared/contract-ids.json
+      EVENT_POLL_INTERVAL_MS: ${EVENT_POLL_INTERVAL_MS:-5000}
+      API_INDEXER_PORT: 8788
+    extra_hosts:
+      - "registry.npmjs.org=0.0.0.0"
+      - "registry.npmjs.org=::"
+    ports:
+      - "127.0.0.1:${API_INDEXER_PORT:-8788}:8788"
     volumes:
-      - ../.forgejo/runner-config.yml:/etc/forgejo-runner/config.yml:ro
-      - ${FORGEJO_RUNNER_TOKEN_FILE:-../.runtime/forgejo-runner/token}:/run/secrets/forgejo-runner-token:ro
+      - contract-shared:/shared:ro
     networks:
-      - forgejo-ci
+      - app-runtime
       - npm-cache-only
     depends_on:
-      verdaccio:
+      postgres:
         condition: service_healthy
-    restart: unless-stopped
+      stellar-local:
+        condition: service_started
+      contract-runner:
+        condition: service_completed_successfully
+
+  kms-gate:
+    build:
+      context: ..
+      dockerfile: components/kms-gate/Dockerfile
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:-docker.io/library/node:22-bookworm}
+        NPM_CONFIG_REGISTRY: http://verdaccio:4873/
+      network: medichain-npm-cache-only
+      extra_hosts:
+        - "registry.npmjs.org=0.0.0.0"
+        - "registry.npmjs.org=::"
+    image: medichain-kms-gate:latest
+    container_name: medichain-kms-gate
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      NPM_CONFIG_REGISTRY: http://verdaccio:4873/
+      npm_config_registry: http://verdaccio:4873/
+      STELLAR_RPC_URL: http://stellar-local:8000
+    extra_hosts:
+      - "registry.npmjs.org=0.0.0.0"
+      - "registry.npmjs.org=::"
+    networks:
+      - app-runtime
+      - npm-cache-only
+    depends_on:
+      stellar-local:
+        condition: service_started
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: medichain-postgres
+    environment:
+      POSTGRES_DB: medichain
+      POSTGRES_USER: medichain
+      POSTGRES_PASSWORD: medichain
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medichain -d medichain"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-runtime
+
+  minio:
+    image: minio/minio:latest
+    container_name: medichain-minio
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: medichain
+      MINIO_ROOT_PASSWORD: medichain
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://127.0.0.1:9000/minio/health/live || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    ports:
+      - "127.0.0.1:${MINIO_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - app-runtime
+
+  stellar-local:
+    image: stellar/quickstart:testing
+    container_name: medichain-stellar-local
+    command: ["--local", "--enable-soroban-rpc"]
+    ports:
+      - "127.0.0.1:${STELLAR_RPC_PORT:-8000}:8000"
+    networks:
+      - app-runtime
+
+  contract-runner:
+    image: stellar/quickstart:testing
+    container_name: medichain-contract-runner
+    entrypoint: ["/bin/bash", "-lc"]
+    command:
+      - |
+        if [ -x /workspace/scripts/deploy-contracts.sh ]; then
+          /workspace/scripts/deploy-contracts.sh
+        else
+          echo "scripts/deploy-contracts.sh is not present yet; skipping contract deployment"
+        fi
+    environment:
+      STELLAR_RPC_URL: http://stellar-local:8000
+      CONTRACT_IDS_FILE: /shared/contract-ids.json
+    extra_hosts:
+      - "registry.npmjs.org=0.0.0.0"
+      - "registry.npmjs.org=::"
+    volumes:
+      - ..:/workspace:ro
+      - contract-shared:/shared
+    networks:
+      - app-runtime
+    depends_on:
+      stellar-local:
+        condition: service_started
 
   # Template for future dApp containers that need to run pnpm/npm/yarn.
   # Keep package-installing app containers on npm-cache-only so they can reach
@@ -127,8 +237,8 @@ networks:
     name: medichain-package-uplink
   app-runtime:
     name: medichain-app-runtime
-  forgejo-ci:
-    external: true
-
 volumes:
   verdaccio-storage:
+  postgres-data:
+  minio-data:
+  contract-shared:
