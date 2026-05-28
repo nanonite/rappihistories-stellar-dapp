@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 ### Changed
+- E2E-7 — Manual browser conformance demo command and UI (#74)
 - E2E-4 — Prescription bridge end-to-end test (#54)
 - E2E-6 — Api-indexer Docker/Postgres and REST route coverage (#71)
 - E2E-2B — Replace Tier 3 fixtures with signed Soroban transactions (#72)
