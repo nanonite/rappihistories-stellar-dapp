@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 ### Changed
+- WEB-8 — Translate web app pages to Spanish (#87)
+- WEB-9 — Expand doctor portal access request workflow (#88)
 - E2E-7 — Manual browser conformance demo command and UI (#74)
 - E2E-4 — Prescription bridge end-to-end test (#54)
 - E2E-6 — Api-indexer Docker/Postgres and REST route coverage (#71)
