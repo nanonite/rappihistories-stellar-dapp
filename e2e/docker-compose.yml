@@ -102,6 +102,15 @@ services:
       - "127.0.0.1:${API_INDEXER_PORT:-8788}:8788"
     volumes:
       - contract-shared:/shared:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:8788/v1/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     networks:
       - app-runtime
       - npm-cache-only
@@ -139,6 +148,15 @@ services:
       - "127.0.0.1:${KMS_GATE_PORT:-8790}:8790"
     volumes:
       - contract-shared:/shared:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:8790/v1/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     networks:
       - app-runtime
       - npm-cache-only
@@ -214,6 +232,30 @@ services:
     networks:
       - app-runtime
     depends_on:
+      stellar-local:
+        condition: service_started
+
+  e2e-runner:
+    image: docker.io/library/node:22-bookworm
+    profiles: ["test"]
+    working_dir: /workspace/e2e
+    command: ["sh", "-lc", "node --test tests/*.test.ts"]
+    environment:
+      API_INDEXER_URL: http://api-indexer:8788
+      KMS_GATE_URL: http://kms-gate:8790
+      STELLAR_RPC_URL: http://stellar-local:8000/soroban/rpc
+      CONTRACT_IDS_FILE: /shared/contract-ids.json
+      SEED_IDENTITIES_FILE: /shared/seed-identities.json
+    volumes:
+      - .:/workspace/e2e:ro
+      - contract-shared:/shared:ro
+    networks:
+      - app-runtime
+    depends_on:
+      api-indexer:
+        condition: service_healthy
+      kms-gate:
+        condition: service_healthy
       stellar-local:
         condition: service_started
 

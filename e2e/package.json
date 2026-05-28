@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "tsc -b",
+    "test:functional": "node --test tests/*.test.ts",
     "typecheck": "tsc -b --pretty false"
   },
   "devDependencies": {

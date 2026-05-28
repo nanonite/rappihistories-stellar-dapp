@@ -118,6 +118,12 @@ After the local runtime starts reliably:
    actions, and assertions. This keeps the product spine deterministic and
    avoids making functional correctness depend on browser automation.
 
+   Run the functional harness with:
+
+   ```bash
+   docker compose -f e2e/docker-compose.yml --profile test run --rm e2e-runner
+   ```
+
 2. Add Playwright and mock wallet infrastructure only for UX confirmation.
    Configure browser tests against `http://web:3000`, inject the mock wallet
    adapter, and verify that the user-facing screens reflect the already-proven
