@@ -68,62 +68,6 @@ http://localhost:3001
 
 Set `WEB_PORT=3000` when port 3000 is available.
 
-## Forgejo CI Job Containers
-
-For the long-term repository and runner boundary, see
-[`docs/integration-workspace.md`](integration-workspace.md). This dependency
-document describes the current web/Node monorepo path; component repos should
-eventually own their own CI workflow and disposable job image instead of
-installing every toolchain on the Forgejo runner host or runner container.
-For the current `ubuntu-latest` runner label contract, see
-[`docs/forgejo-runner-labels.md`](forgejo-runner-labels.md).
-
-Forgejo Actions jobs run through a Docker-in-Docker daemon. The web component
-`.npmrc` intentionally points to `http://localhost:4873/` for host-side
-developer installs, but `localhost` inside a DIND job container is the job
-container itself, not Verdaccio.
-
-CI overrides the registry with environment variables in
-`.forgejo/workflows/ci.yml`:
-
-```text
-NPM_CONFIG_REGISTRY=http://medichain-verdaccio:4873/
-npm_config_registry=http://medichain-verdaccio:4873/
-YARN_NPM_REGISTRY_SERVER=http://medichain-verdaccio:4873/
-```
-
-The repo-owned `forgejo-runner` Compose service is attached to
-`medichain-npm-cache-only` and waits for Verdaccio to become healthy. The
-external `forgejo-dind` container is not created by this Compose file, so its
-network attachment must be maintained by the operator whenever that container
-is created or recreated:
-
-```bash
-docker network connect medichain-npm-cache-only forgejo-dind 2>/dev/null || true
-docker inspect forgejo-dind \
-  --format '{{if index .NetworkSettings.Networks "medichain-npm-cache-only"}}ok{{else}}missing{{end}}'
-```
-
-The expected output is `ok`. Without this attachment, job containers using the
-runner's host-network DIND mode cannot resolve or reach
-`http://medichain-verdaccio:4873/`.
-
-Use this DIND job-container-style health check after runner/DIND maintenance:
-
-```bash
-docker -H tcp://forgejo-dind:2375 run --rm --network host \
-  -e NPM_CONFIG_REGISTRY=http://medichain-verdaccio:4873/ \
-  -e npm_config_registry=http://medichain-verdaccio:4873/ \
-  docker.io/library/node:22-bookworm \
-  bash -lc 'node -e "fetch(\"http://medichain-verdaccio:4873/-/ping\").then((r)=>process.exit(r.ok?0:1)).catch((err)=>{ console.error(err); process.exit(1); })"; npm install --global pnpm@9.15.9 --registry "$NPM_CONFIG_REGISTRY" --loglevel warn; pnpm config get registry'
-```
-
-The final line should be:
-
-```text
-http://medichain-verdaccio:4873/
-```
-
 ## Nix Contract Toolchain Boundary
 
 `components/contracts/flake.nix` defines only the Soroban contract toolchain:
@@ -136,7 +80,8 @@ cd components/contracts
 nix develop
 ```
 
-Use the CI variant from Forgejo contract job containers:
+Use the CI-flavored shell locally when you want the same stricter tool set for
+contract verification:
 
 ```bash
 cd components/contracts
@@ -149,8 +94,7 @@ Verdaccio approval and cache flow in this document. Web/dApp work remains on
 the Docker plus Verdaccio path; service toolchains should get their own
 component-owned container or flake only when their boundaries justify it.
 
-See [`docs/nix-toolchain.md`](nix-toolchain.md) for contract validation commands
-and Forgejo runner integration details.
+See [`docs/nix-toolchain.md`](nix-toolchain.md) for contract validation commands.
 
 ## Lock Modes
 
@@ -191,6 +135,22 @@ docker run --rm --network medichain-npm-cache-only \
   bash -lc 'pnpm fetch --force --store-dir /tmp/medichain-pnpm-store --registry http://verdaccio:4873/'
 components/web/lock-npmjs.sh
 ```
+
+For e2e, keep a separate Verdaccio runtime but clone the already-approved
+development cache into the e2e storage volume before a from-scratch run:
+
+```bash
+e2e/up.sh
+```
+
+This copies package storage only. The e2e Verdaccio service still mounts the
+checked-in `components/web/verdaccio-config.yaml` locked config and does not
+gain an npmjs uplink during normal test runs.
+
+The order matters: Compose builds images before starting application services,
+so a single `docker compose up --build` cannot rely on the `verdaccio` service
+being available during the build. `e2e/up.sh` starts locked e2e Verdaccio first,
+then builds images against `127.0.0.1:${E2E_VERDACCIO_PORT:-4874}`.
 
 Then restore the workspace install from the normal local store if needed:
 

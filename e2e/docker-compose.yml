@@ -22,12 +22,12 @@ x-npm-cache-only: &npm-cache-only
 services:
   verdaccio:
     image: verdaccio/verdaccio:6
-    container_name: medichain-verdaccio
+    container_name: medichain-e2e-verdaccio
     volumes:
       - ${VERDACCIO_CONFIG:-../components/web/verdaccio-config.yaml}:/verdaccio/conf/config.yaml:ro
       - verdaccio-storage:/verdaccio/storage
     ports:
-      - "127.0.0.1:4873:4873"
+      - "127.0.0.1:${E2E_VERDACCIO_PORT:-4874}:4873"
     healthcheck:
       test:
         [
@@ -48,8 +48,8 @@ services:
       dockerfile: web/Dockerfile
       args:
         NODE_IMAGE: ${NODE_IMAGE:-web-dev-template:latest}
-        NPM_CONFIG_REGISTRY: http://verdaccio:4873/
-      network: medichain-npm-cache-only
+        NPM_CONFIG_REGISTRY: http://127.0.0.1:${E2E_VERDACCIO_PORT:-4874}/
+      network: host
       extra_hosts:
         - "registry.npmjs.org=0.0.0.0"
         - "registry.npmjs.org=::"
@@ -78,8 +78,8 @@ services:
       dockerfile: components/api-indexer/Dockerfile
       args:
         NODE_IMAGE: ${NODE_IMAGE:-docker.io/library/node:22-bookworm}
-        NPM_CONFIG_REGISTRY: http://verdaccio:4873/
-      network: medichain-npm-cache-only
+        NPM_CONFIG_REGISTRY: http://127.0.0.1:${E2E_VERDACCIO_PORT:-4874}/
+      network: host
       extra_hosts:
         - "registry.npmjs.org=0.0.0.0"
         - "registry.npmjs.org=::"
@@ -90,7 +90,7 @@ services:
       NPM_CONFIG_REGISTRY: http://verdaccio:4873/
       npm_config_registry: http://verdaccio:4873/
       DATABASE_URL: postgres://medichain:medichain@postgres:5432/medichain
-      STELLAR_RPC_URL: http://stellar-local:8000
+      STELLAR_RPC_URL: http://stellar-local:8000/soroban/rpc
       INDEXER_CONTRACT_IDS_FILE: /shared/contract-ids.json
       SEED_IDENTITIES_FILE: /shared/seed-identities.json
       EVENT_POLL_INTERVAL_MS: ${EVENT_POLL_INTERVAL_MS:-5000}
@@ -119,8 +119,8 @@ services:
       dockerfile: components/kms-gate/Dockerfile
       args:
         NODE_IMAGE: ${NODE_IMAGE:-docker.io/library/node:22-bookworm}
-        NPM_CONFIG_REGISTRY: http://verdaccio:4873/
-      network: medichain-npm-cache-only
+        NPM_CONFIG_REGISTRY: http://127.0.0.1:${E2E_VERDACCIO_PORT:-4874}/
+      network: host
       extra_hosts:
         - "registry.npmjs.org=0.0.0.0"
         - "registry.npmjs.org=::"
@@ -130,11 +130,13 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       NPM_CONFIG_REGISTRY: http://verdaccio:4873/
       npm_config_registry: http://verdaccio:4873/
-      STELLAR_RPC_URL: http://stellar-local:8000
+      STELLAR_RPC_URL: http://stellar-local:8000/soroban/rpc
       KMS_CONTRACT_IDS_FILE: /shared/contract-ids.json
     extra_hosts:
       - "registry.npmjs.org=0.0.0.0"
       - "registry.npmjs.org=::"
+    ports:
+      - "127.0.0.1:${KMS_GATE_PORT:-8790}:8790"
     volumes:
       - contract-shared:/shared:ro
     networks:
@@ -197,25 +199,17 @@ services:
       - app-runtime
 
   contract-runner:
-    image: stellar/quickstart:testing
+    build:
+      context: ..
+      dockerfile: components/contracts/Dockerfile
+      target: contract-runner
+    image: medichain-contract-runner:latest
     container_name: medichain-contract-runner
-    entrypoint: ["/bin/bash", "-lc"]
-    command:
-      - |
-        if [ -x /workspace/scripts/deploy-contracts.sh ]; then
-          /workspace/scripts/deploy-contracts.sh
-        else
-          echo "scripts/deploy-contracts.sh is not present yet; skipping contract deployment"
-        fi
     environment:
-      STELLAR_RPC_URL: http://stellar-local:8000
+      STELLAR_RPC_URL: http://stellar-local:8000/soroban/rpc
       CONTRACT_IDS_FILE: /shared/contract-ids.json
       SEED_IDENTITIES_FILE: /shared/seed-identities.json
-    extra_hosts:
-      - "registry.npmjs.org=0.0.0.0"
-      - "registry.npmjs.org=::"
     volumes:
-      - ..:/workspace:ro
       - contract-shared:/shared
     networks:
       - app-runtime
@@ -236,12 +230,12 @@ services:
 
 networks:
   npm-cache-only:
-    name: medichain-npm-cache-only
+    name: medichain-e2e-npm-cache-only
     internal: true
   package-uplink:
-    name: medichain-package-uplink
+    name: medichain-e2e-package-uplink
   app-runtime:
-    name: medichain-app-runtime
+    name: medichain-e2e-app-runtime
 volumes:
   verdaccio-storage:
   postgres-data:

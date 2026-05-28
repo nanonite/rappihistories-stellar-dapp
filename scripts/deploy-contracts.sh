@@ -4,7 +4,7 @@ set -euo pipefail
 CONTRACTS_DIR="${CONTRACTS_DIR:-/workspace/components/contracts}"
 CONTRACT_IDS_FILE="${CONTRACT_IDS_FILE:-/shared/contract-ids.json}"
 SEED_IDENTITIES_FILE="${SEED_IDENTITIES_FILE:-/shared/seed-identities.json}"
-STELLAR_RPC_URL="${STELLAR_RPC_URL:-http://stellar-local:8000}"
+STELLAR_RPC_URL="${STELLAR_RPC_URL:-http://stellar-local:8000/soroban/rpc}"
 STELLAR_NETWORK="${STELLAR_NETWORK:-local}"
 STELLAR_NETWORK_PASSPHRASE="${STELLAR_NETWORK_PASSPHRASE:-Standalone Network ; February 2017}"
 SOURCE_ACCOUNT="${SOURCE_ACCOUNT:-medichain-admin}"
@@ -31,6 +31,7 @@ main() {
   mkdir -p "$(dirname "$CONTRACT_IDS_FILE")" "$(dirname "$SEED_IDENTITIES_FILE")"
   configure_local_network
   build_contracts
+  ensure_funded_identity "$SOURCE_ACCOUNT" >/dev/null
   write_seed_identities
   deploy_contracts
 }
@@ -38,7 +39,6 @@ main() {
 configure_local_network() {
   if has_stellar_cli; then
     stellar network add "$STELLAR_NETWORK" \
-      --global \
       --rpc-url "$STELLAR_RPC_URL" \
       --network-passphrase "$STELLAR_NETWORK_PASSPHRASE" >/dev/null 2>&1 || true
   fi
@@ -48,6 +48,11 @@ build_contracts() {
   if [[ ! -d "$CONTRACTS_DIR" ]]; then
     echo "Contract directory not found: $CONTRACTS_DIR" >&2
     exit 1
+  fi
+
+  if [[ "${SKIP_CONTRACT_BUILD:-0}" == "1" ]]; then
+    echo "Skipping contract build; using prebuilt wasm artifacts in $CONTRACTS_DIR"
+    return
   fi
 
   (cd "$CONTRACTS_DIR" && cargo build --release --target wasm32-unknown-unknown)
@@ -73,8 +78,10 @@ ensure_funded_identity() {
   local public_key
 
   if has_stellar_cli; then
-    stellar keys generate "$name" --global --network "$STELLAR_NETWORK" >/dev/null 2>&1 || true
-    stellar keys fund "$name" --network "$STELLAR_NETWORK" >/dev/null
+    stellar keys generate "$name" >/dev/null 2>&1 || true
+    stellar keys fund "$name" \
+      --rpc-url "$STELLAR_RPC_URL" \
+      --network-passphrase "$STELLAR_NETWORK_PASSPHRASE" >/dev/null
     stellar keys public-key "$name"
     return
   fi
@@ -120,8 +127,9 @@ deploy_wasm() {
   if has_stellar_cli; then
     stellar contract deploy \
       --wasm "$wasm_path" \
-      --source "$SOURCE_ACCOUNT" \
-      --network "$STELLAR_NETWORK"
+      --source-account "$SOURCE_ACCOUNT" \
+      --rpc-url "$STELLAR_RPC_URL" \
+      --network-passphrase "$STELLAR_NETWORK_PASSPHRASE"
     return
   fi
 
