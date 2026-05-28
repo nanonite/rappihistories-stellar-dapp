@@ -30,6 +30,10 @@ Current coverage:
 - break-glass veto denial through signed Stellar contract state and KMS `VETOED`
 - break-glass no-veto release after `revealAt`
 - tokenless fallback release after an indexed emergency cosigner grant
+- prescription bridge from clinician issue to patient pharmacy selection,
+  supplychain reservation, dispense, and dispensation receipt writeback
+- prescription negative paths: pharmacy-only dispense denial and quarantined
+  batch reservation denial
 
 Browser automation should sit above this layer as UX confirmation only. Product
 correctness should be proven here through service APIs and Stellar helpers.
