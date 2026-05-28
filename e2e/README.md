@@ -19,6 +19,8 @@ Current coverage:
 - `/shared/contract-ids.json` shape
 - `/shared/seed-identities.json` role counts and unique funded identities
 - api-indexer read route availability for seeded patients
+- api-indexer REST response hygiene: camelCase payloads and no raw event leakage
+- api-indexer cursor state coverage for indexed grant ledgers
 - Stellar latest-ledger helper
 - KMS release route validation for malformed requests
 - Tier 3 setup through signed Soroban transactions on `stellar-local`

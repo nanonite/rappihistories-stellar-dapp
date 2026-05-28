@@ -52,6 +52,11 @@ export interface NotificationsResponse {
   readonly notifications: readonly unknown[];
 }
 
+export interface IndexerStateResponse {
+  readonly lastLedger: string;
+  readonly updatedAt: string | null;
+}
+
 export interface E2ERecordFixture {
   readonly patientPseudonym: string;
   readonly plaintext: string;
@@ -148,6 +153,12 @@ export async function readNotifications(
   return getJson<NotificationsResponse>(apiIndexerUrl, "/v1/notifications", {
     patient: patientPseudonym,
   });
+}
+
+export async function readIndexerState(
+  apiIndexerUrl: string,
+): Promise<IndexerStateResponse> {
+  return getJson<IndexerStateResponse>(apiIndexerUrl, "/v1/indexer/state");
 }
 
 export async function createTier3RecordFixture(
