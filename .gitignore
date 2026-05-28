@@ -37,7 +37,8 @@ components/contracts/**/test_snapshots/
 opencode.json
 
 # local agent/orchestration artifacts
-.chainlink/
+.chainlink/*
+!.chainlink/issues.db
 .claude/
 You are the root TL.md
 
