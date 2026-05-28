@@ -32,14 +32,15 @@ write_scenarios() {
   local patient_secret="$3"
   local clinician_public="$4"
   local clinician_secret="$5"
-  local now happy revoked expired
+  local now happy revoked expired expired_expires_at
 
   now="$(date +%s)"
   happy="$(create_scenario "$access_broker" "$patient_public" "$patient_secret" "$clinician_public" "$clinician_secret" happy "$((now + 300))" no)"
   revoked="$(create_scenario "$access_broker" "$patient_public" "$patient_secret" "$clinician_public" "$clinician_secret" revoked "$((now + 300))" yes)"
-  expired="$(create_scenario "$access_broker" "$patient_public" "$patient_secret" "$clinician_public" "$clinician_secret" expired "$((now + 12))" no)"
+  expired_expires_at="$(($(date +%s) + 30))"
+  expired="$(create_scenario "$access_broker" "$patient_public" "$patient_secret" "$clinician_public" "$clinician_secret" expired "$expired_expires_at" no)"
 
-  sleep 13
+  sleep_until_expired "$expired_expires_at"
 
   {
     printf '{"scenarios":{'
@@ -148,6 +149,17 @@ to_hex() {
 
 extract_hex_32() {
   grep -Eo '[[:xdigit:]]{64}' | tail -1 | tr '[:upper:]' '[:lower:]'
+}
+
+sleep_until_expired() {
+  local expires_at="$1"
+  local now wait_seconds
+
+  now="$(date +%s)"
+  wait_seconds="$((expires_at - now + 1))"
+  if ((wait_seconds > 0)); then
+    sleep "$wait_seconds"
+  fi
 }
 
 main "$@"

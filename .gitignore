@@ -24,11 +24,7 @@ components/contracts/**/test_snapshots/
 # sbx
 .sbx/
 .od/
-# ExoMonad - track config and source, ignore runtime artifacts
-.exo/*
-!.exo/roles/
-!.exo/lib/
-!.exo/rules/
+.exo/
 .codex/
 .tangled/*
 !.tangled/workflows/
