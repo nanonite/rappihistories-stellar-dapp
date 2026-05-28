@@ -44,6 +44,31 @@ export interface RecordsResponse {
   readonly records: readonly unknown[];
 }
 
+export interface HistoryResponse {
+  readonly history: readonly unknown[];
+}
+
+export interface WriteGrantDetails {
+  readonly grantId: string;
+  readonly subject: string;
+  readonly grantee: string;
+  readonly scopeCategory: string;
+  readonly expiresAt: string;
+  readonly revoked: boolean;
+  readonly createdAt: string;
+  readonly ledgerSequence: string;
+  readonly eventTimestamp: string | null;
+  readonly indexedAt: string;
+}
+
+export interface WriteGrantDetailsResponse {
+  readonly writeGrant: WriteGrantDetails;
+}
+
+export interface WriteGrantsResponse {
+  readonly writeGrants: readonly WriteGrantDetails[];
+}
+
 export interface AuditResponse {
   readonly audit: readonly unknown[];
 }
@@ -81,6 +106,22 @@ export interface E2EGrantFixture {
   readonly expiresAt?: number;
   readonly purpose?: string;
   readonly scopeCategory?: string;
+}
+
+export interface E2EWriteGrantFixture {
+  readonly subject: string;
+  readonly grantee: string;
+  readonly expiresInSeconds?: number;
+  readonly expiresAt?: number;
+  readonly scopeCategory?: string;
+}
+
+export interface E2EAppendRecordFixture {
+  readonly subject: string;
+  readonly author: string;
+  readonly writeGrantId: string;
+  readonly plaintext: string;
+  readonly category?: string;
 }
 
 export async function waitForApiIndexer(apiIndexerUrl: string): Promise<void> {
@@ -137,6 +178,26 @@ export async function readRecords(
   });
 }
 
+export async function readPatientHistory(
+  apiIndexerUrl: string,
+  subject: string,
+): Promise<HistoryResponse> {
+  return getJson<HistoryResponse>(
+    apiIndexerUrl,
+    `/v1/patients/${encodeURIComponent(subject)}/history`,
+  );
+}
+
+export async function readPatientWriteGrants(
+  apiIndexerUrl: string,
+  subject: string,
+): Promise<WriteGrantsResponse> {
+  return getJson<WriteGrantsResponse>(
+    apiIndexerUrl,
+    `/v1/patients/${encodeURIComponent(subject)}/write-grants`,
+  );
+}
+
 export async function readAudit(
   apiIndexerUrl: string,
   patientPseudonym: string,
@@ -189,6 +250,34 @@ export async function createTier3GrantFixture(
   ).body;
 }
 
+export async function createTier3WriteGrantFixture(
+  apiIndexerUrl: string,
+  fixture: E2EWriteGrantFixture,
+): Promise<WriteGrantDetailsResponse> {
+  return (
+    await postJson<WriteGrantDetailsResponse>(
+      apiIndexerUrl,
+      "/__e2e/tier3/write-grants",
+      fixture,
+      [201],
+    )
+  ).body;
+}
+
+export async function appendTier3RecordFixture(
+  apiIndexerUrl: string,
+  fixture: E2EAppendRecordFixture,
+): Promise<{ readonly record: Record<string, unknown> }> {
+  return (
+    await postJson<{ readonly record: Record<string, unknown> }>(
+      apiIndexerUrl,
+      "/__e2e/tier3/append-records",
+      fixture,
+      [201],
+    )
+  ).body;
+}
+
 export async function revokeTier3GrantFixture(
   apiIndexerUrl: string,
   grantId: string,
@@ -197,6 +286,20 @@ export async function revokeTier3GrantFixture(
     await postJson<GrantDetailsResponse>(
       apiIndexerUrl,
       `/__e2e/tier3/grants/${encodeURIComponent(grantId)}/revoke`,
+      {},
+      [200],
+    )
+  ).body;
+}
+
+export async function revokeTier3WriteGrantFixture(
+  apiIndexerUrl: string,
+  grantId: string,
+): Promise<WriteGrantDetailsResponse> {
+  return (
+    await postJson<WriteGrantDetailsResponse>(
+      apiIndexerUrl,
+      `/__e2e/tier3/write-grants/${encodeURIComponent(grantId)}/revoke`,
       {},
       [200],
     )

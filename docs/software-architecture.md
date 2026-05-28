@@ -931,11 +931,21 @@ access broker receives dispensation receipt commitment
 ### Clinician Appends to Patient History (Option A)
 
 The patient history is modelled as an append-only event stream. Each
-`Record` entry carries explicit `subject` (patient) and `author` (writer)
-fields and is immutable once written. To append on a patient's behalf a
-clinician needs a live `GrantType::Write` issued by the patient, scoped
-by category and `expires_at`. Reads of the new entry still flow through
-the normal grant path — `append_record` releases no ciphertext.
+`Record` entry carries explicit `subject` (patient), `author` (writer),
+`created_at`, `locator`, and `commitment` fields and is immutable once
+written. To append on a patient's behalf a clinician needs a live
+`GrantType::Write` issued by the patient, scoped by category and
+`expires_at`. Reads of the new entry still flow through the normal grant
+path — `append_record` releases no ciphertext, and KMS rejects Write
+grant ids as release inputs.
+
+The api-indexer projects the stream through
+`GET /patients/:subject/history`, write grants through
+`GET /patients/:subject/write-grants`, and single write-grant state
+through `GET /write-grants/:id`. These read models expose only metadata:
+subject, author, tier, category, locator, commitment, timestamps, and
+grant lineage. Human-readable clinical note text remains encrypted
+off-chain.
 
 See chainlink #78 (APPEND-1) for the umbrella and #79 (BKR-7) for the
 contract changes.

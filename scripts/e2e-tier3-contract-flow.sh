@@ -32,13 +32,14 @@ write_scenarios() {
   local patient_secret="$3"
   local clinician_public="$4"
   local clinician_secret="$5"
-  local now happy revoked expired expired_expires_at
+  local now happy revoked expired expired_expires_at append
 
   now="$(date +%s)"
   happy="$(create_scenario "$access_broker" "$patient_public" "$patient_secret" "$clinician_public" "$clinician_secret" happy "$((now + 300))" no)"
   revoked="$(create_scenario "$access_broker" "$patient_public" "$patient_secret" "$clinician_public" "$clinician_secret" revoked "$((now + 300))" yes)"
   expired_expires_at="$(($(date +%s) + 30))"
   expired="$(create_scenario "$access_broker" "$patient_public" "$patient_secret" "$clinician_public" "$clinician_secret" expired "$expired_expires_at" no)"
+  append="$(create_append_scenario "$access_broker" "$patient_public" "$patient_secret" "$clinician_public" "$clinician_secret" "$((now + 600))")"
 
   sleep_until_expired "$expired_expires_at"
 
@@ -46,7 +47,8 @@ write_scenarios() {
     printf '{"scenarios":{'
     printf '"happy":%s,' "$happy"
     printf '"revoked":%s,' "$revoked"
-    printf '"expired":%s' "$expired"
+    printf '"expired":%s,' "$expired"
+    printf '"append":%s' "$append"
     printf '}}\n'
   } >"$TIER3_SCENARIOS_FILE"
 
@@ -107,6 +109,59 @@ create_scenario() {
     "$clinician_secret" \
     "$record_id" \
     "$grant_id" \
+    "$locator" \
+    "$commitment" \
+    "$commitment" \
+    "$expires_at"
+}
+
+create_append_scenario() {
+  local access_broker="$1"
+  local patient_public="$2"
+  local patient_secret="$3"
+  local clinician_public="$4"
+  local clinician_secret="$5"
+  local expires_at="$6"
+  local plaintext locator locator_hex commitment record_id write_grant_id invoke_output recommendation_id
+
+  recommendation_id="$(sha256_hex "append-recommendation:$(date +%s%N)")"
+  plaintext="{\"subject\":\"e2e-tier3-append\",\"recommendationId\":\"$recommendation_id\",\"medicine\":\"amoxicillin-500mg\"}"
+  locator="opaque://e2e/append/$(date +%s%N)"
+  locator_hex="$(to_hex "$locator")"
+  commitment="$(sha256_hex "$plaintext")"
+  record_id="$(sha256_hex "append:$locator")"
+
+  invoke_output="$(
+    stellar_invoke "$access_broker" "$patient_secret" create_write_grant \
+      --subject "$patient_public" \
+      --grantee "$clinician_public" \
+      --scope_category note \
+      --expires_at "$expires_at"
+  )"
+  write_grant_id="$(printf '%s\n' "$invoke_output" | extract_hex_32)"
+
+  if [[ -z "$write_grant_id" ]]; then
+    printf 'Could not extract write grant id from create_write_grant output:\n%s\n' "$invoke_output" >&2
+    return 1
+  fi
+
+  stellar_invoke "$access_broker" "$clinician_secret" append_record \
+    --author "$clinician_public" \
+    --subject "$patient_public" \
+    --write_grant_id "$write_grant_id" \
+    --record_id "$record_id" \
+    --tier FullHistory \
+    --category note \
+    --locator_bytes "$locator_hex" \
+    --commitment "$commitment" >/dev/null
+
+  printf '{"patientPseudonym":"%s","clinicianPublicKey":"%s","clinicianSecretKey":"%s","sourceRecord":"tier3-happy-record","recommendationId":"%s","prescribedMedicine":"amoxicillin-500mg","expectedFollowUp":"clinical_history_writeback","recordId":"%s","writeGrantId":"%s","locator":"%s","commitment":"%s","plaintextSha256":"%s","expiresAt":%s}' \
+    "$patient_public" \
+    "$clinician_public" \
+    "$clinician_secret" \
+    "$recommendation_id" \
+    "$record_id" \
+    "$write_grant_id" \
     "$locator" \
     "$commitment" \
     "$commitment" \
