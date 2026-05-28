@@ -38,6 +38,118 @@ The current prototype stores or displays human-readable clinical notes through t
 
 The current `medical-record` contract should be replaced by an access broker contract. It should not remain a place where readable clinical notes are appended on-chain.
 
+## System Overview
+
+The diagrams below summarize how the runtime pieces connect. They are
+non-normative — the prose sections that follow remain the source of
+truth for component responsibilities.
+
+### Component map
+
+Logical view of services, contracts, off-chain stores, and the actors that
+drive flows through the web app.
+
+```mermaid
+flowchart LR
+  Patient((Patient))
+  Clinician((Clinician))
+  Pharmacy((Pharmacy))
+  Responder((Responder))
+
+  subgraph App["Application services"]
+    Web["Web app<br/>Next.js"]
+    API["api-indexer<br/>Node"]
+    KMS["kms-gate<br/>Node"]
+  end
+
+  subgraph Chain["Stellar / Soroban"]
+    RPC["stellar-local RPC"]
+    AB["access-broker"]
+    ID["identity"]
+    RX["prescription"]
+    SC["supplychain"]
+    RPC --- AB
+    RPC --- ID
+    RPC --- RX
+    RPC --- SC
+  end
+
+  subgraph Stores["Off-chain stores"]
+    PG[("Postgres<br/>projections")]
+    OBJ[("MinIO<br/>encrypted payloads")]
+  end
+
+  Patient --> Web
+  Clinician --> Web
+  Pharmacy --> Web
+  Responder --> Web
+
+  Web -->|read models| API
+  Web -->|sign + submit txs| RPC
+  Web -->|key release| KMS
+  Web -->|get/put ciphertext| OBJ
+
+  API -->|stream events| RPC
+  API --> PG
+
+  KMS -->|read grant projection| API
+  KMS -->|re-verify committed state| RPC
+```
+
+Key invariants visible in the diagram:
+
+- The web app never asks contracts for decryption keys. Key release is a
+  separate request to `kms-gate`.
+- `kms-gate` re-reads committed Stellar state on every release. The
+  api-indexer projection is a hint, not a trust anchor.
+- Ciphertext lives in MinIO. The chain stores only locators and
+  commitments.
+
+### Deployment view
+
+Docker Compose layout for local development and e2e
+(`e2e/docker-compose.yml`).
+
+```mermaid
+flowchart TB
+  subgraph Compose["docker compose"]
+    direction LR
+    subgraph Runtime["app-runtime network"]
+      web["web"]
+      apii["api-indexer"]
+      kmsg["kms-gate"]
+      pg[("postgres")]
+      mio[("minio")]
+      sl["stellar-local"]
+      cr["contract-runner<br/>(deploy init)"]
+      tier["tier3-contract-flow<br/>(seed init)"]
+      er["e2e-runner<br/>(test profile)"]
+    end
+    subgraph Pkg["npm-cache-only network"]
+      ver["verdaccio"]
+    end
+  end
+
+  cr -->|deploys WASM| sl
+  tier -->|seeds Tier 3 scenarios| sl
+  apii -->|event stream| sl
+  kmsg -->|state re-verify| sl
+  apii --> pg
+  web --> apii
+  web --> kmsg
+  web --> mio
+  er --> apii
+  er --> kmsg
+  er --> sl
+
+  web -. install .-> ver
+  apii -. install .-> ver
+  kmsg -. install .-> ver
+```
+
+Init-only services (`contract-runner`, `tier3-contract-flow`) run once
+and exit; downstream services wait on `service_completed_successfully`.
+
 ## System Components
 
 ### Web App
@@ -331,6 +443,90 @@ components: `components/web/Dockerfile`, `components/web/pnpm-lock.yaml`,
 
 ## Domain Model
 
+### Contract storage entities
+
+The on-chain shape of the load-bearing entities. Field names mirror the
+Soroban storage structs in `components/contracts/*/src/`. Off-chain
+projections in api-indexer expose camelCase views of the same fields.
+
+```mermaid
+classDiagram
+  class Record {
+    +Address owner
+    +Tier tier
+    +Category category
+    +bool sensitive
+    +Bytes locator
+    +BytesN_32 commitment
+  }
+  class Grant {
+    +BytesN_32 record
+    +Address grantee
+    +GrantType gtype
+    +Symbol purpose
+    +Category scope_category
+    +u64 expires_at
+    +u64 reveal_at
+    +bool revoked
+    +bool vetoed
+  }
+  class GrantType {
+    <<enumeration>>
+    Normal
+    BreakGlass
+    TokenlessFallback
+  }
+  class Prescription {
+    +BytesN_32 id
+    +Address patient
+    +Address clinician
+    +BytesN_32 commitment
+    +Address selected_pharmacy
+    +PrescriptionState state
+  }
+  class PrescriptionState {
+    <<enumeration>>
+    Issued
+    Reserved
+    Dispensed
+    Closed
+    Expired
+    Cancelled
+  }
+  class Reservation {
+    +BytesN_32 prescription
+    +BytesN_32 unit
+    +u64 expires_at
+  }
+  class Unit {
+    +BytesN_32 id
+    +BytesN_32 batch
+    +Address custody
+    +UnitState state
+  }
+  class Batch {
+    +BytesN_32 id
+    +BytesN_32 product
+    +bool quarantined
+  }
+  Record "1" --> "*" Grant : grants
+  Grant --> GrantType
+  Prescription --> PrescriptionState
+  Prescription "1" --> "0..1" Reservation : reserves
+  Reservation --> Unit
+  Unit --> Batch
+```
+
+Notes:
+
+- `Record.commitment` is a SHA-256 over the encrypted payload; the
+  ciphertext itself is in MinIO at `Record.locator`.
+- `Grant` collapses the previous normal/emergency split into one record
+  type, discriminated by `gtype`. `reveal_at` is `0` for `Normal` grants
+  and non-zero for `BreakGlass` / `TokenlessFallback`.
+- `Prescription.selected_pharmacy` is the anti-ghost-dispense anchor —
+  see [Primary Workflows → Prescription Reservation](#prescription-reservation).
+
 ### Clinical Records and Access
 
 Core types:
@@ -604,6 +800,35 @@ clinician decrypts and reads payload
 read audit event is submitted
 ```
 
+```mermaid
+sequenceDiagram
+  autonumber
+  actor P as Patient
+  participant W as Web
+  participant AB as access-broker
+  participant API as api-indexer
+  actor C as Clinician
+  participant K as kms-gate
+  participant S as MinIO
+  P->>W: select record + scope
+  W->>AB: register_record / create_grant
+  AB-->>API: GrantCreated event
+  C->>W: request access
+  W->>API: lookup grant
+  API-->>W: {grant_id, locator, commitment}
+  C->>K: request key (grant_id, signed)
+  K->>API: read grant projection
+  K->>AB: re-verify committed state
+  alt predicate passes
+    K-->>C: wrapped key
+    C->>S: GET ciphertext(locator)
+    S-->>C: ciphertext
+    C->>C: verify commitment, decrypt
+  else predicate fails
+    K-->>C: 403 REVOKED / VETOED / EXPIRED / BEFORE_REVEAL / WRONG_REQUESTER
+  end
+```
+
 ### Emergency Break-Glass
 
 ```text
@@ -618,6 +843,37 @@ responder fetches ciphertext, verifies commitment, decrypts emergency bundle
 patient notification is queued
 ```
 
+```mermaid
+sequenceDiagram
+  autonumber
+  actor R as Responder
+  participant W as Web
+  participant AB as access-broker
+  participant API as api-indexer
+  actor P as Patient
+  participant K as kms-gate
+  participant S as MinIO
+  R->>W: scan emergency card / lookup
+  W->>AB: open_break_glass(reveal_at, expires_at)
+  AB-->>API: GrantCreated (BreakGlass)
+  API->>P: notification (veto window open)
+  opt patient vetoes within reveal window
+    P->>W: veto
+    W->>AB: veto(grant_id)
+    AB-->>API: GrantVetoed
+  end
+  Note over R,K: wait until reveal_at
+  R->>K: request key
+  K->>API: read grant state
+  alt vetoed / revoked / expired / before_reveal
+    K-->>R: 403 + reason
+  else passes
+    K-->>R: wrapped key
+    R->>S: GET ciphertext
+    R->>R: verify + decrypt emergency bundle
+  end
+```
+
 Offline path:
 
 ```text
@@ -630,6 +886,35 @@ delayed audit is submitted and marked offline_delayed
 ```
 
 ### Prescription Reservation
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor C as Clinician
+  participant W as Web
+  participant RX as prescription
+  participant SC as supplychain
+  actor P as Patient
+  actor Ph as Pharmacy
+  participant AB as access-broker
+  C->>W: write encrypted prescription event
+  W->>RX: issue(commitment)
+  RX-->>W: prescription id
+  P->>W: select pharmacy
+  W->>RX: select_pharmacy(p_id)
+  W->>SC: list eligible units
+  SC-->>W: candidate unit
+  W->>RX: reserve(unit)
+  RX->>SC: lock unit
+  Note over RX,SC: rejected if BatchQuarantined
+  Ph->>W: prepare dispense
+  W->>RX: dispense(prescription, unit)
+  Note right of RX: pharmacy == selected_pharmacy<br/>(anti-ghost-dispense)
+  Note right of RX: patient co-sign — multi-party<br/>Soroban auth limited locally,<br/>see chainlink #75
+  RX->>SC: mark unit dispensed
+  RX->>AB: write dispensation receipt
+  AB-->>P: audit event
+```
 
 ```text
 clinician writes encrypted prescription event to patient record
