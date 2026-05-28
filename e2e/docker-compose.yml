@@ -94,6 +94,7 @@ services:
       INDEXER_CONTRACT_IDS_FILE: /shared/contract-ids.json
       SEED_IDENTITIES_FILE: /shared/seed-identities.json
       EVENT_POLL_INTERVAL_MS: ${EVENT_POLL_INTERVAL_MS:-5000}
+      E2E_FIXTURE_API: ${E2E_FIXTURE_API:-1}
       API_INDEXER_PORT: 8788
     extra_hosts:
       - "registry.npmjs.org=0.0.0.0"
@@ -141,6 +142,7 @@ services:
       npm_config_registry: http://verdaccio:4873/
       STELLAR_RPC_URL: http://stellar-local:8000/soroban/rpc
       KMS_CONTRACT_IDS_FILE: /shared/contract-ids.json
+      API_INDEXER_URL: http://api-indexer:8788
     extra_hosts:
       - "registry.npmjs.org=0.0.0.0"
       - "registry.npmjs.org=::"

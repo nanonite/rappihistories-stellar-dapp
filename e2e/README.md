@@ -21,6 +21,14 @@ Current coverage:
 - api-indexer read route availability for seeded patients
 - Stellar latest-ledger helper
 - KMS release route validation for malformed requests
+- Tier 3 happy path key release through api-indexer-backed KMS grant lookup
+- Tier 3 revoked and expired grant denials through the live KMS predicate
 
 Browser automation should sit above this layer as UX confirmation only. Product
 correctness should be proven here through service APIs and Stellar helpers.
+
+The Tier 3 tests currently use api-indexer development fixture routes to create
+read-model state. That keeps the service relationship test deterministic while
+the dedicated Stellar contract invocation layer is still missing. The next
+tightening step is to replace fixture setup with signed Soroban transactions
+that produce the same api-indexer state from contract events.

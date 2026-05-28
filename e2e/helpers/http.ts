@@ -27,6 +27,7 @@ export async function postJson<T>(
   baseUrl: string,
   path: string,
   body: unknown,
+  expectedStatuses?: readonly number[],
 ): Promise<{ readonly status: number; readonly body: T }> {
   const url = new URL(path, `${baseUrl}/`);
   const response = await fetch(url, {
@@ -36,6 +37,12 @@ export async function postJson<T>(
     },
     body: JSON.stringify(body),
   });
+
+  if (expectedStatuses && !expectedStatuses.includes(response.status)) {
+    throw new Error(
+      `POST ${url} failed: ${response.status} ${response.statusText}`,
+    );
+  }
 
   return {
     status: response.status,

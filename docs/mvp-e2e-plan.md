@@ -132,6 +132,12 @@ After the local runtime starts reliably:
 3. `E2E-2` / Chainlink `#52`: implement the Tier 3 happy path, revocation,
    and expiry checks.
 
+   The first local version may use development-only api-indexer fixture routes
+   for record and grant setup. Those fixtures are acceptable for proving the
+   service relationship between e2e-runner, api-indexer, and kms-gate, but they
+   should be replaced by signed Soroban contract invocations once the Stellar
+   invocation helper layer exists.
+
 This phase is the MVP spine. Once it passes locally, the system has crossed from
 component completeness into working product integration.
 
