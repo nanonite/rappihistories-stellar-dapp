@@ -72,19 +72,15 @@ services. It is writable only by `contract-runner` and mounted read-only by
 
 ```json
 {
-  "network": {
-    "rpcUrl": "http://stellar-local:8000/soroban/rpc",
-    "networkPassphrase": "Standalone Network ; February 2017"
-  },
-  "identities": {
-    "admin": { "publicKey": "G..." },
-    "patient-1": { "publicKey": "G..." },
-    "patient-2": { "publicKey": "G..." },
-    "clinician-1": { "publicKey": "G..." },
-    "clinician-2": { "publicKey": "G..." },
-    "pharmacy": { "publicKey": "G..." },
-    "responder": { "publicKey": "G..." }
-  }
+  "identities": [
+    { "alias": "admin", "role": "admin", "publicKey": "G...", "secretKey": "S..." },
+    { "alias": "patient-1", "role": "patient", "publicKey": "G...", "secretKey": "S..." },
+    { "alias": "patient-2", "role": "patient", "publicKey": "G...", "secretKey": "S..." },
+    { "alias": "clinician-1", "role": "clinician", "publicKey": "G...", "secretKey": "S..." },
+    { "alias": "clinician-2", "role": "clinician", "publicKey": "G...", "secretKey": "S..." },
+    { "alias": "pharmacy", "role": "pharmacy", "publicKey": "G...", "secretKey": "S..." },
+    { "alias": "responder", "role": "responder", "publicKey": "G...", "secretKey": "S..." }
+  ]
 }
 ```
 
@@ -103,11 +99,9 @@ services. It is writable only by `contract-runner` and mounted read-only by
   It returns `{ wrappedKey }` when allowed, or `{ denied: true, reason }` when
   the predicate, auth, or rate limit denies the request.
 
-The current `kms-gate` container is a local runtime wrapper around the domain
-predicate and HTTP API. Its grant reader is still a stub, so it proves the
-process boundary and request shape but does not yet prove live grant lookup from
-the indexer. The next e2e task should replace that stub with a concrete
-indexer-backed reader and lock the route payloads with tests.
+The current `kms-gate` container reads grants from `api-indexer` for the Tier 3
+path and verifies requester signatures using the seeded local Stellar
+identities.
 
 ## Phase 2: Minimum E2E
 
@@ -132,11 +126,10 @@ After the local runtime starts reliably:
 3. `E2E-2` / Chainlink `#52`: implement the Tier 3 happy path, revocation,
    and expiry checks.
 
-   The first local version may use development-only api-indexer fixture routes
-   for record and grant setup. Those fixtures are acceptable for proving the
-   service relationship between e2e-runner, api-indexer, and kms-gate, but they
-   should be replaced by signed Soroban contract invocations once the Stellar
-   invocation helper layer exists.
+   The current local version uses signed Soroban transactions against
+   `stellar-local` for record registration, grant creation, and revocation.
+   `api-indexer` builds the read model from contract events, and `kms-gate`
+   performs release decisions through that indexed state.
 
 This phase is the MVP spine. Once it passes locally, the system has crossed from
 component completeness into working product integration.

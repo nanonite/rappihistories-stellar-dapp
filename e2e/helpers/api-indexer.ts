@@ -105,6 +105,24 @@ export async function readGrantById(
   );
 }
 
+export async function waitForGrantById(
+  apiIndexerUrl: string,
+  grantId: string,
+): Promise<GrantDetailsResponse> {
+  let latest: GrantDetailsResponse | null = null;
+
+  await waitForJson(
+    `grant ${grantId}`,
+    async () => {
+      latest = await readGrantById(apiIndexerUrl, grantId);
+      return latest;
+    },
+    (response) => response.grant.grantId === grantId,
+  );
+
+  return latest!;
+}
+
 export async function readRecords(
   apiIndexerUrl: string,
   patientPseudonym: string,

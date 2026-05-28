@@ -20,6 +20,7 @@ export interface SeedIdentity {
   readonly alias: string;
   readonly role: SeedRole;
   readonly publicKey: string;
+  readonly secretKey: string;
   readonly funded: boolean;
 }
 
@@ -99,12 +100,15 @@ function readSeedIdentity(value: unknown, location: string): SeedIdentity {
   }
 
   const { alias, role, publicKey, funded } = value;
+  const secretKey = value.secretKey;
 
   if (
     typeof alias !== "string" ||
     !isSeedRole(role) ||
     typeof publicKey !== "string" ||
     !/^G[A-Z2-7]{55}$/.test(publicKey) ||
+    typeof secretKey !== "string" ||
+    !/^S[A-Z2-7]{55}$/.test(secretKey) ||
     funded !== true
   ) {
     throw new Error(`${location} is not a valid funded seed identity`);
@@ -114,6 +118,7 @@ function readSeedIdentity(value: unknown, location: string): SeedIdentity {
     alias,
     role,
     publicKey,
+    secretKey,
     funded,
   };
 }

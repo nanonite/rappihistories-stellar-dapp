@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 ### Changed
+- E2E-2B — Replace Tier 3 fixtures with signed Soroban transactions (#72)
 - INF — Isolate contract-runner Nix/Cargo cache layer (#73)
 - E2E-2 — Tier 3 happy path and revocation test (#52)
 - E2E-1 — API-first functional e2e infrastructure (#51)

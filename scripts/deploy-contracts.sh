@@ -27,6 +27,8 @@ seed_aliases=(
   "responder:responder"
 )
 
+SEED_IDENTITY_MNEMONIC="${SEED_IDENTITY_MNEMONIC:-medichain e2e deterministic seed}"
+
 main() {
   mkdir -p "$(dirname "$CONTRACT_IDS_FILE")" "$(dirname "$SEED_IDENTITIES_FILE")"
   configure_local_network
@@ -60,29 +62,49 @@ build_contracts() {
 
 write_seed_identities() {
   local json_entries=()
-  local alias role public_key
+  local alias role public_key secret_key identity_index
+
+  identity_index=0
 
   for alias_role in "${seed_aliases[@]}"; do
     alias="${alias_role%%:*}"
     role="${alias_role##*:}"
-    public_key="$(ensure_funded_identity "medichain-${alias}")"
-    json_entries+=("$(printf '{"alias":"%s","role":"%s","publicKey":"%s","funded":true}' "$alias" "$role" "$public_key")")
+    public_key="$(ensure_funded_identity "medichain-${alias}" "$identity_index")"
+    secret_key="$(read_identity_secret "medichain-${alias}" "$identity_index")"
+    json_entries+=("$(printf '{"alias":"%s","role":"%s","publicKey":"%s","secretKey":"%s","funded":true}' "$alias" "$role" "$public_key" "$secret_key")")
+    identity_index=$((identity_index + 1))
   done
 
   write_json_array_file "$SEED_IDENTITIES_FILE" "identities" "${json_entries[@]}"
   echo "Wrote seed identities to $SEED_IDENTITIES_FILE"
 }
 
+read_identity_secret() {
+  local name="$1"
+  local hd_path="${2:-0}"
+
+  if has_stellar_cli; then
+    stellar keys secret "$name" --hd-path "$hd_path"
+    return
+  fi
+
+  echo "Secret export requires stellar CLI" >&2
+  exit 1
+}
+
 ensure_funded_identity() {
   local name="$1"
+  local hd_path="${2:-0}"
   local public_key
 
   if has_stellar_cli; then
-    stellar keys generate "$name" >/dev/null 2>&1 || true
-    stellar keys fund "$name" \
-      --rpc-url "$STELLAR_RPC_URL" \
-      --network-passphrase "$STELLAR_NETWORK_PASSPHRASE" >/dev/null
-    stellar keys public-key "$name"
+    stellar keys generate "$name" \
+      --overwrite \
+      --seed "$SEED_IDENTITY_MNEMONIC" \
+      --hd-path "$hd_path" >/dev/null
+    public_key="$(stellar keys public-key "$name" --hd-path "$hd_path")"
+    fund_public_key "$public_key"
+    printf '%s\n' "$public_key"
     return
   fi
 
@@ -145,17 +167,60 @@ deploy_wasm() {
   exit 1
 }
 
+retry() {
+  local description="$1"
+  shift
+  local attempt
+
+  for attempt in $(seq 1 60); do
+    if "$@" >/dev/null; then
+      return
+    fi
+
+    echo "Waiting for ${description} (attempt ${attempt}/60)" >&2
+    sleep 5
+  done
+
+  echo "Failed to ${description}" >&2
+  return 1
+}
+
 fund_public_key() {
   local public_key="$1"
-  local friendbot_url="${FRIENDBOT_URL:-${STELLAR_RPC_URL%/}/friendbot}"
+  local stellar_base_url="${STELLAR_RPC_URL%/}"
+  stellar_base_url="${stellar_base_url%/soroban/rpc}"
+  local friendbot_url="${FRIENDBOT_URL:-${stellar_base_url}/friendbot}"
 
   if command -v curl >/dev/null 2>&1; then
-    curl --fail --silent --show-error "${friendbot_url}?addr=${public_key}" >/dev/null
+    retry "fund $public_key" fund_with_friendbot "${friendbot_url}?addr=${public_key}"
     return
   fi
 
   echo "curl is required to fund soroban identities through local friendbot" >&2
   exit 1
+}
+
+fund_with_friendbot() {
+  local url="$1"
+  local response status body
+
+  response="$(curl --silent --show-error --write-out '\n%{http_code}' "$url")" || return 1
+  status="$(printf '%s' "$response" | tail -n 1)"
+  body="$(printf '%s' "$response" | sed '$d')"
+
+  case "$status" in
+    200|201)
+      return 0
+      ;;
+    400)
+      if printf '%s' "$body" | grep -Eiq 'already|exist|fund'; then
+        return 0
+      fi
+      ;;
+  esac
+
+  printf 'Friendbot HTTP %s: %s\n' "$status" "$body" >&2
+  return 1
 }
 
 write_json_array_file() {
